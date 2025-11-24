@@ -69,89 +69,141 @@ phases:
             account_list=$(aws organizations list-accounts --query 'Accounts[?Status==`ACTIVE`].Id' --output text)
           fi
           echo "Account list for post-build processing: $account_list"
-          
+
           # Clean up any existing account-files directory to ensure fresh start
           echo "Cleaning up existing account-files directory"
           rm -rf /tmp/account-files
           mkdir -p /tmp/account-files
-          
-          echo "Copying files from respective account S3 buckets to CodeBuild environment"
-          for accountId in $account_list; do
-            echo "Processing account $accountId"
-            if [[ $accountId == $AWS_ACCOUNT_ID ]]; then
-              # Management account - use mgmt stack name
-              STACK_NAME="resco-aiml-security-mgmt"
-            else
-              # Member account - assume role and use account-specific stack name
-              aws sts assume-role --role-arn arn:$AWS_PARTITION:iam::$accountId:role/service-role/$RESCO_ROLE --role-session-name ReSCOAssessment > /tmp/creds.json || continue
-              export AWS_ACCESS_KEY_ID=$(cat /tmp/creds.json | jq -r '.Credentials.AccessKeyId')
-              export AWS_SECRET_ACCESS_KEY=$(cat /tmp/creds.json | jq -r '.Credentials.SecretAccessKey')
-              export AWS_SESSION_TOKEN=$(cat /tmp/creds.json | jq -r '.Credentials.SessionToken')
-              STACK_NAME="resco-aiml-security-$accountId"
-            fi
-            
-            # Wait for Step Function to complete before copying files
-            STATE_MACHINE_ARN=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query 'Stacks[0].Outputs[?OutputKey==`AIMLAssessmentStateMachineArn`].OutputValue' --output text 2>/dev/null)
+
+          # Function to wait for Step Function completion
+          wait_for_execution() {
+            local account_id=$1
+            local stack_name=$2
+            local timeout=300
+
+            STATE_MACHINE_ARN=$(aws cloudformation describe-stacks --stack-name $stack_name --query 'Stacks[0].Outputs[?OutputKey==`AIMLAssessmentStateMachineArn`].OutputValue' --output text 2>/dev/null)
             if [[ $STATE_MACHINE_ARN != "" ]]; then
-              echo "Waiting for Step Function completion in account $accountId..."
+              echo tsaiting for Step Function completion in account $account_id..."
               EXECUTION_ARN=$(aws stepfunctions list-executions --state-machine-arn $STATE_MACHINE_ARN --status-filter RUNNING --max-items 1 --query 'executions[0].executionArn' --output text 2>/dev/null)
               if [[ $EXECUTION_ARN != "" && $EXECUTION_ARN != "None" ]]; then
-                timeout=300
                 elapsed=0
                 while [[ $elapsed -lt $timeout ]]; do
                   STATUS=$(aws stepfunctions describe-execution --execution-arn $EXECUTION_ARN --query 'status' --output text 2>/dev/null)
                   if [[ $STATUS == "SUCCEEDED" || $STATUS == "FAILED" || $STATUS == "TIMED_OUT" || $STATUS == "ABORTED" ]]; then
-                    echo "Step Function for account $accountId completed with status: $STATUS"
-                    break
+                    echo "Step Function for account $account_id completed with status: $STATUS"
+                    return 0
                   fi
-                  echo "Step Function for account $accountId still running... waiting 30 seconds"
                   sleep 30
                   elapsed=$((elapsed + 30))
                 done
+                echo "Timeout waiting for account $account_id"
               fi
             fi
-            
-            # Now copy files from the completed assessment
-            ACCOUNT_BUCKET=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query 'Stacks[0].Outputs[?OutputKey==`AssessmentBucketName`].OutputValue' --output text 2>/dev/null)
+          }
+
+          # Function to copy files from account bucket
+          copy_account_files() {
+            local account_id=$1
+            local stack_name=$2
+
+            ACCOUNT_BUCKET=$(aws cloudformation describe-stacks --stack-name $stack_name --query 'Stacks[0].Outputs[?OutputKey==`AssessmentBucketName`].OutputValue' --output text 2>/dev/null)
             if [[ $ACCOUNT_BUCKET != "" ]]; then
-              echo "Copying files from $ACCOUNT_BUCKET to local storage"
-              mkdir -p /tmp/account-files/$accountId
-              # List bucket contents first for debugging
-              echo "Bucket contents for $accountId:"
-              aws s3 ls s3://$ACCOUNT_BUCKET/ || echo "Failed to list bucket contents"
-              aws s3 cp s3://$ACCOUNT_BUCKET/ /tmp/account-files/$accountId/ --recursive --exclude "*" --include "*.csv" --include "*.html" --exclude "*/" || echo "No files to copy from $accountId"
-              # Show what was actually copied
-              echo "Files copied for $accountId:"
-              ls -la /tmp/account-files/$accountId/ || echo "No files in directory"
-              # Flatten any nested directories
-              find /tmp/account-files/$accountId -type f \( -name "*.csv" -o -name "*.html" \) -exec mv {} /tmp/account-files/$accountId/ \; 2>/dev/null || true
-              find /tmp/account-files/$accountId -type d -empty -delete 2>/dev/null || true
+              echo "Syncing files from s3://$ACCOUNT_BUCKET/ for account $account_id"
+              mkdir -p /tmp/account-files/$account_id
+
+              # Use sync instead of cp for better performance and idempotency
+              aws s3 sync s3://$ACCOUNT_BUCKET/ /tmp/account-files/$account_id/ \
+                --exclude "*" \
+                --include "*.csv" \
+                --include "*.html" \
+                --no-progress \
+                --only-show-errors || echo "Warning: Sync failed for $account_id"
+
+              # Flatten directory structure in one operation
+              if [[ -d /tmp/account-files/$account_id ]]; then
+                find /tmp/account-files/$account_id -mindepth 2 -type f \( -name "*.csv" -o -name "*.html" \) -exec mv -t /tmp/account-files/$account_id/ {} + 2>/dev/null || true
+                find /tmp/account-files/$account_id -mindepth 1 -type d -empty -delete 2>/dev/null || true
+                echo "Synced $(find /tmp/account-files/$account_id -maxdepth 1 -type f | wc -l) files for account $account_id"
+              fi
             else
-              echo "No assessment bucket found for $accountId (STACK_NAME: $STACK_NAME)"
+              echo "No assessment bucket found for $account_id"
             fi
-            
-            if [[ $accountId != $AWS_ACCOUNT_ID ]]; then
-              unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
-            fi
+          }
+
+          echo "Processing accounts in parallel batches"
+          # Process accounts in batches for better performance
+          batch_size=5
+          account_array=($account_list)
+          total_accounts=${#account_array[@]}
+
+          for ((i=0; i<$total_accounts; i+=$batch_size)); do
+            batch_end=$((i + batch_size))
+            [[ $batch_end -gt $total_accounts ]] && batch_end=$total_accounts
+
+            echo "Processing batch: accounts $((i+1)) to $batch_end of $total_accounts"
+
+            # Process batch in parallel
+            for ((j=i; j<$batch_end; j++)); do
+              accountId=${account_array[$j]}
+              (
+                echo "Processing account $accountId"
+                if [[ $accountId == $AWS_ACCOUNT_ID ]]; then
+                  STACK_NAME="resco-aiml-security-mgmt"
+                  wait_for_execution "$accountId" "$STACK_NAME"
+                  copy_account_files "$accountId" "$STACK_NAME"
+                else
+                  # Assume role for member account
+                  if aws sts assume-role --role-arn arn:$AWS_PARTITION:iam::$accountId:role/service-role/$RESCO_ROLE --role-session-name ReSCOAssessment > /tmp/creds-$accountId.json 2>/dev/null; then
+                    export AWS_ACCESS_KEY_ID=$(jq -r '.Credentials.AccessKeyId' /tmp/creds-$accountId.json)
+                    export AWS_SECRET_ACCESS_KEY=$(jq -r '.Credentials.SecretAccessKey' /tmp/creds-$accountId.json)
+                    export AWS_SESSION_TOKEN=$(jq -r '.Credentials.SessionToken' /tmp/creds-$accountId.json)
+
+                    STACK_NAME="resco-aiml-security-$accountId"
+                    wait_for_execution "$accountId" "$STACK_NAME"
+                    copy_account_files "$accountId" "$STACK_NAME"
+
+                    rm -f /tmp/creds-$accountId.json
+                  else
+                    echo "Failed to assume role for account $accountId"
+                  fi
+                fi
+              ) &
+            done
+
+            # Wait for batch to complete
+            wait
+            echo "Batch complete"
           done
-          
+
+          echo "All account file copies completed"
+
           echo "Uploading files to management account S3 bucket and creating consolidated report"
           pip3 install beautifulsoup4
-          
+
           # Debug: Show which directories exist
           echo "Available account directories:"
           ls -la /tmp/account-files/ || echo "No account-files directory"
-          
-          # Upload files from local storage to management account bucket organized by account (overwrite)
-          for accountId in $account_list; do
-            if [[ -d /tmp/account-files/$accountId ]]; then
-              echo "Uploading files for account $accountId (overwriting existing)"
-              aws s3 sync /tmp/account-files/$accountId/ s3://$BUCKET_REPORT/$accountId/ || echo "Failed to upload files for $accountId"
-            else
-              echo "No directory found for account $accountId"
-            fi
-          done
-          
+
+          # Batch upload files to management account bucket using sync
+          echo "Uploading consolidated files to s3://$BUCKET_REPORT/"
+
+          # Count total files to upload
+          total_files=$(find /tmp/account-files -type f | wc -l)
+          echo "Uploading $total_files files from all accounts"
+
+          # Use single sync operation for all accounts (much faster than individual syncs)
+          if [[ -d /tmp/account-files ]]; then
+            # Sync entire directory structure in one operation
+            aws s3 sync /tmp/account-files/ s3://$BUCKET_REPORT/ \
+              --delete \
+              --no-progress \
+              --only-show-errors || echo "Warning: Batch upload encountered errors"
+
+            echo "Upload completed successfully"
+          else
+            echo "No files to upload"
+          fi
+
           # Create consolidated HTML report using separate script
           python3 ../consolidate_html_reports.py
         fi

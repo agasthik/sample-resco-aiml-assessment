@@ -1,9 +1,10 @@
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  resco-aiml-assessment
-
-  Multi-account SAM Template for resco-aiml-assessment
+  ReSCO AI/ML Security Assessment Framework (Multi-Account) - Serverless application designed for
+  cross-account security assessments of AI/ML workloads. Deploys Lambda functions and Step Functions
+  workflow that can be invoked from a central management account to assess Amazon Bedrock and Amazon
+  SageMaker resources across multiple AWS accounts. Results are consolidated in a shared S3 bucket.
 
 Parameters:
   BucketName:
@@ -296,7 +297,7 @@ Resources:
             Effect: Deny
             Principal: '*'
             Action: s3:*
-            Resource: 
+            Resource:
               - !Sub '${AIMLAssessmentBucket.Arn}/*'
               - !GetAtt AIMLAssessmentBucket.Arn
             Condition:
@@ -305,7 +306,7 @@ Resources:
 
 Outputs:
   AIMLAssessmentStateMachineArn:
-    Description: "AIML Assessment State Machine"
+    Description: 'AIML Assessment State Machine'
     Value: !Ref AIMLAssessmentStateMachine
   AssessmentBucketName:
     Description: Name of the S3 bucket where assessment reports are stored

@@ -11,8 +11,8 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 import random
 import json
-#TO DO PYDANTIC SUPPORT
 from schema import create_finding
+from resource_cache import cached_api_call, get_cache
 # Configure boto3 with retries
 boto3_config = Config(
     retries = dict(
@@ -25,13 +25,149 @@ boto3_config = Config(
 logger = logging.getLogger()
 logger.setLevel(logging.ERROR)
 
+
+# Cached AWS API call wrappers
+@cached_api_call('sagemaker_notebook_instances')
+def get_sagemaker_notebook_instances(max_items=100):
+    """
+    Get list of SageMaker notebook instances (cached)
+
+    Args:
+        max_items: Maximum number of items to return (default: 100)
+    """
+    sagemaker_client = boto3.client('sagemaker', config=boto3_config)
+    paginator = sagemaker_client.get_paginator('list_notebook_instances')
+    instances = []
+    for page in paginator.paginate(PaginationConfig={'MaxItems': max_items, 'PageSize': 50}):
+        instances.extend(page.get('NotebookInstances', []))
+    return instances
+
+
+@cached_api_call('sagemaker_domains')
+def get_sagemaker_domains(max_items=100):
+    """
+    Get list of SageMaker domains (cached)
+
+    Args:
+        max_items: Maximum number of items to return (default: 100)
+    """
+    sagemaker_client = boto3.client('sagemaker', config=boto3_config)
+    paginator = sagemaker_client.get_paginator('list_domains')
+    domains = []
+    for page in paginator.paginate(PaginationConfig={'MaxItems': max_items, 'PageSize': 50}):
+        domains.extend(page.get('Domains', []))
+    return domains
+
+
+@cached_api_call('sagemaker_training_jobs')
+def get_sagemaker_training_jobs(max_items=100):
+    """
+    Get list of SageMaker training jobs (cached)
+
+    Args:
+        max_items: Maximum number of items to return (default: 100)
+    """
+    sagemaker_client = boto3.client('sagemaker', config=boto3_config)
+    paginator = sagemaker_client.get_paginator('list_training_jobs')
+    jobs = []
+    for page in paginator.paginate(PaginationConfig={'MaxItems': max_items, 'PageSize': 50}):
+        jobs.extend(page.get('TrainingJobSummaries', []))
+    return jobs
+
+
+@cached_api_call('sagemaker_model_package_groups')
+def get_sagemaker_model_package_groups(max_items=100):
+    """
+    Get list of SageMaker model package groups (cached)
+
+    Args:
+        max_items: Maximum number of items to return (default: 100)
+    """
+    sagemaker_client = boto3.client('sagemaker', config=boto3_config)
+    paginator = sagemaker_client.get_paginator('list_model_package_groups')
+    groups = []
+    for page in paginator.paginate(PaginationConfig={'MaxItems': max_items, 'PageSize': 50}):
+        groups.extend(page.get('ModelPackageGroupSummaryList', []))
+    return groups
+
+
+@cached_api_call('sagemaker_feature_groups')
+def get_sagemaker_feature_groups(max_items=100):
+    """
+    Get list of SageMaker feature groups (cached)
+
+    Args:
+        max_items: Maximum number of items to return (default: 100)
+    """
+    sagemaker_client = boto3.client('sagemaker', config=boto3_config)
+    paginator = sagemaker_client.get_paginator('list_feature_groups')
+    groups = []
+    for page in paginator.paginate(PaginationConfig={'MaxItems': max_items, 'PageSize': 50}):
+        groups.extend(page.get('FeatureGroupSummaries', []))
+    return groups
+
+
+@cached_api_call('sagemaker_pipelines')
+def get_sagemaker_pipelines(max_items=100):
+    """
+    Get list of SageMaker pipelines (cached)
+
+    Args:
+        max_items: Maximum number of items to return (default: 100)
+    """
+    sagemaker_client = boto3.client('sagemaker', config=boto3_config)
+    paginator = sagemaker_client.get_paginator('list_pipelines')
+    pipelines = []
+    for page in paginator.paginate(PaginationConfig={'MaxItems': max_items, 'PageSize': 50}):
+        pipelines.extend(page.get('PipelineSummaries', []))
+    return pipelines
+
+
+@cached_api_call('sagemaker_processing_jobs')
+def get_sagemaker_processing_jobs(max_items=100):
+    """
+    Get list of SageMaker processing jobs (cached)
+
+    Args:
+        max_items: Maximum number of items to return (default: 100)
+    """
+    sagemaker_client = boto3.client('sagemaker', config=boto3_config)
+    paginator = sagemaker_client.get_paginator('list_processing_jobs')
+    jobs = []
+    for page in paginator.paginate(PaginationConfig={'MaxItems': max_items, 'PageSize': 50}):
+        jobs.extend(page.get('ProcessingJobSummaries', []))
+    return jobs
+
+
+@cached_api_call('sagemaker_monitoring_schedules')
+def get_sagemaker_monitoring_schedules(max_items=100):
+    """
+    Get list of SageMaker monitoring schedules (cached)
+
+    Args:
+        max_items: Maximum number of items to return (default: 100)
+    """
+    sagemaker_client = boto3.client('sagemaker', config=boto3_config)
+    paginator = sagemaker_client.get_paginator('list_monitoring_schedules')
+    schedules = []
+    for page in paginator.paginate(PaginationConfig={'MaxItems': max_items, 'PageSize': 50}):
+        schedules.extend(page.get('MonitoringScheduleSummaries', []))
+    return schedules
+
+
+@cached_api_call('guardduty_detectors')
+def get_guardduty_detectors():
+    """Get list of GuardDuty detectors (cached)"""
+    guardduty_client = boto3.client('guardduty', config=boto3_config)
+    return guardduty_client.list_detectors()
+
 def get_permissions_cache(execution_id: str) -> Optional[Dict[str, Any]]:
     """
     Retrieve and parse the permissions cache JSON file from S3
-    
+
     Args:
         execution_id (str): Step Functions execution ID
-    
+
     Returns:
         Optional[Dict[str, Any]]: Parsed permissions cache as dictionary, None if not found or error
     """
@@ -42,21 +178,21 @@ def get_permissions_cache(execution_id: str) -> Optional[Dict[str, Any]]:
         s3_bucket = os.environ.get('AIML_ASSESSMENT_BUCKET_NAME')
 
         logger.info(f"Retrieving permissions cache from s3://{s3_bucket}/{s3_key}")
-        
+
         try:
             # Get the JSON file from S3
             response = s3_client.get_object(
                 Bucket=s3_bucket,
                 Key=s3_key
             )
-            
+
             # Read and parse the JSON content
             json_content = response['Body'].read().decode('utf-8')
             permissions_cache = json.loads(json_content)
-            
+
             logger.info(f"Successfully retrieved permissions cache for execution {execution_id}")
             return permissions_cache
-            
+
         except ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchKey':
                 logger.warning(f"Permissions cache not found: s3://{s3_bucket}/{s3_key}")
@@ -65,7 +201,7 @@ def get_permissions_cache(execution_id: str) -> Optional[Dict[str, Any]]:
             else:
                 logger.error(f"AWS error retrieving permissions cache: {str(e)}", exc_info=True)
             return None
-            
+
     except json.JSONDecodeError as e:
         logger.error(f"Error parsing permissions cache JSON: {str(e)}", exc_info=True)
         return None
@@ -85,10 +221,10 @@ def check_sagemaker_internet_access() -> Dict[str, Any]:
 
         instances_with_direct_access = []
         domains_with_direct_access = []
-        
+
         # Create SageMaker client
         sagemaker_client = boto3.client('sagemaker')
-        
+
         # Check Notebook Instances
         try:
             paginator = sagemaker_client.get_paginator('list_notebook_instances')
@@ -100,7 +236,7 @@ def check_sagemaker_internet_access() -> Dict[str, Any]:
                         instance_details = sagemaker_client.describe_notebook_instance(
                             NotebookInstanceName=instance_name
                         )
-                        
+
                         # Check if direct internet access is enabled
                         if instance_details.get('DirectInternetAccess') == 'Enabled':
                             instances_with_direct_access.append({
@@ -122,10 +258,10 @@ def check_sagemaker_internet_access() -> Dict[str, Any]:
                         domain_details = sagemaker_client.describe_domain(
                             DomainId=domain_id
                         )
-                        
+
                         vpc_id = domain_details.get('DomainSettings', {}).get('SecurityGroupIds', ['N/A'])[0]
                         domain_name = domain_details.get('DomainName', 'N/A')
-                        
+
                         # Check network access type
                         if domain_details.get('AppNetworkAccessType') != 'VpcOnly':
                             domains_with_direct_access.append({
@@ -139,7 +275,7 @@ def check_sagemaker_internet_access() -> Dict[str, Any]:
         # Generate findings
         if instances_with_direct_access or domains_with_direct_access:
             findings['status'] = 'WARN'
-            
+
             # Add findings for notebook instances
             for instance in instances_with_direct_access:
                 findings['csv_data'].append(create_finding(
@@ -151,7 +287,7 @@ def check_sagemaker_internet_access() -> Dict[str, Any]:
                     status='Failed'
                     )
                 )
-            
+
             # Add findings for domains
             for domain in domains_with_direct_access:
                 findings['csv_data'].append(create_finding(
@@ -188,7 +324,7 @@ def check_sagemaker_internet_access() -> Dict[str, Any]:
 def check_guardduty_enabled() -> Dict[str, Any]:
     """
     Check if GuardDuty is enabled in the account to monitor SageMaker security issues
-    
+
     Returns:
         Dict[str, Any]: Finding details including status and recommendations
     """
@@ -198,13 +334,13 @@ def check_guardduty_enabled() -> Dict[str, Any]:
         'details': '',
         'csv_data': []
     }
-    
+
     try:
         guardduty_client = boto3.client('guardduty')
-        
+
         # Get list of detectors in the current region
         detectors = guardduty_client.list_detectors()
-        
+
         if not detectors.get('DetectorIds'):
             findings['csv_data'].append(
                 create_finding(
@@ -248,10 +384,10 @@ def check_guardduty_enabled() -> Dict[str, Any]:
                 resolution='Investigate and resolve the unexpected error',
                 reference='https://docs.aws.amazon.com/guardduty/latest/ug/what-is-guardduty.html',
                 severity='High',
-                status='Failed'    
+                status='Failed'
             )
         )
-        
+
     return findings
 
 def check_sagemaker_iam_permissions(permission_cache) -> Dict[str, Any]:
@@ -284,14 +420,14 @@ def check_sagemaker_iam_permissions(permission_cache) -> Dict[str, Any]:
                 if has_sagemaker_permissions(policy['document']):
                     has_sagemaker_access = True
                     break
-            
+
             if has_sagemaker_access:
                 try:
                     response = iam_client.generate_service_last_accessed_details(
                         Arn=f"arn:aws:iam::{get_account_id()}:user/{user_name}"
                     )
                     job_id = response['JobId']
-                    
+
                     # Wait for job completion
                     waiter_time = 0
                     while waiter_time < 10:
@@ -316,7 +452,7 @@ def check_sagemaker_iam_permissions(permission_cache) -> Dict[str, Any]:
         try:
             sagemaker_client = boto3.client('sagemaker')
             paginator = sagemaker_client.get_paginator('list_domains')
-            
+
             for page in paginator.paginate():
                 for domain in page['Domains']:
                     domain_id = domain['DomainId']
@@ -324,7 +460,7 @@ def check_sagemaker_iam_permissions(permission_cache) -> Dict[str, Any]:
                         domain_details = sagemaker_client.describe_domain(
                             DomainId=domain_id
                         )
-                        
+
                         # Check authentication mode
                         auth_mode = domain_details.get('AuthMode', '')
                         if auth_mode != 'SSO':
@@ -333,14 +469,14 @@ def check_sagemaker_iam_permissions(permission_cache) -> Dict[str, Any]:
                                 'domain_name': domain_details.get('DomainName', 'N/A'),
                                 'auth_mode': auth_mode
                             })
-                            
+
                         # Check if SSO is properly configured with Identity Center
                         if auth_mode == 'SSO':
                             try:
                                 # Check Identity Center configuration
                                 sso_client = boto3.client('sso-admin')
                                 identity_store_id = domain_details.get('IdentityStoreId')
-                                
+
                                 if not identity_store_id:
                                     domains_without_sso.append({
                                         'domain_id': domain_id,
@@ -349,17 +485,17 @@ def check_sagemaker_iam_permissions(permission_cache) -> Dict[str, Any]:
                                     })
                             except Exception as sso_error:
                                 logger.error(f"Error checking SSO configuration for domain {domain_id}: {str(sso_error)}")
-                                
+
                     except Exception as domain_error:
                         logger.error(f"Error checking domain {domain_id}: {str(domain_error)}")
-                        
+
         except Exception as e:
             logger.error(f"Error checking SSO configuration: {str(e)}")
 
 
         # Generate findings
         if roles_with_full_access or stale_users:
-            
+
             # Findings for full access roles
             if roles_with_full_access:
                 for role_name in roles_with_full_access:
@@ -378,7 +514,7 @@ def check_sagemaker_iam_permissions(permission_cache) -> Dict[str, Any]:
                 for user in stale_users:
                     findings['csv_data'].append(create_finding(
                         finding_name='Stale SageMaker Access',
-                        finding_details=f"User '{user["user_name"]}' hasn't accessed SageMaker since {last_accessed.strftime('%Y-%m-%d')}",
+                        finding_details=f"User '{user['name']}' hasn't accessed SageMaker since {user['last_accessed'].strftime('%Y-%m-%d')}",
                         resolution="Review and remove SageMaker access for inactive users",
                         reference="https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/security-iam.html",
                         severity='Medium',
@@ -436,7 +572,7 @@ def has_sagemaker_permissions(policy_doc: Dict) -> bool:
         statements = policy_doc.get('Statement', [])
         if isinstance(statements, dict):
             statements = [statements]
-            
+
         for statement in statements:
             effect = statement.get('Effect', '')
             if effect.upper() != 'ALLOW':
@@ -477,7 +613,7 @@ def check_sagemaker_data_protection() -> Dict[str, Any]:
 
         sagemaker_client = boto3.client('sagemaker')
         kms_client = boto3.client('kms')
-        
+
         # Track resources with encryption issues
         resources_with_aws_managed_keys = []
         resources_without_encryption = []
@@ -493,7 +629,7 @@ def check_sagemaker_data_protection() -> Dict[str, Any]:
                         instance_details = sagemaker_client.describe_notebook_instance(
                             NotebookInstanceName=instance_name
                         )
-                        
+
                         # Check KMS key usage
                         kms_key_id = instance_details.get('KmsKeyId')
                         if not kms_key_id:
@@ -521,7 +657,7 @@ def check_sagemaker_data_protection() -> Dict[str, Any]:
                         domain_details = sagemaker_client.describe_domain(
                             DomainId=domain_id
                         )
-                        
+
                         # Check KMS key usage for domain
                         kms_key_id = domain_details.get('KmsKeyId')
                         if not kms_key_id:
@@ -558,11 +694,11 @@ def check_sagemaker_data_protection() -> Dict[str, Any]:
                         job_details = sagemaker_client.describe_training_job(
                             TrainingJobName=job_name
                         )
-                        
+
                         # Check output encryption
                         output_config = job_details.get('OutputDataConfig', {})
                         kms_key_id = output_config.get('KmsKeyId')
-                        
+
                         if not kms_key_id:
                             resources_without_encryption.append({
                                 'type': 'Training Job',
@@ -588,7 +724,7 @@ def check_sagemaker_data_protection() -> Dict[str, Any]:
 
         # Generate findings
         if resources_without_encryption or resources_with_aws_managed_keys or resources_without_vpc_encryption:
-            
+
             # Resources without encryption
             for resource in resources_without_encryption:
                 findings['csv_data'].append(
@@ -650,7 +786,7 @@ def check_sagemaker_data_protection() -> Dict[str, Any]:
 
 def check_sagemaker_mlops_utilization(permission_cache) -> Dict[str, Any]:
     """
-    Check if SageMaker MLOps features (Model Registry, Feature Store, and Pipelines) 
+    Check if SageMaker MLOps features (Model Registry, Feature Store, and Pipelines)
     are being utilized properly
     """
     logger.debug("Starting check for SageMaker MLOps features utilization")
@@ -661,14 +797,14 @@ def check_sagemaker_mlops_utilization(permission_cache) -> Dict[str, Any]:
 
         sagemaker_client = boto3.client('sagemaker', config=boto3_config)
         issues_found = []
-        
+
         # Check Model Registry Usage
         try:
             model_packages = []
             paginator = sagemaker_client.get_paginator('list_model_package_groups')
             for page in paginator.paginate():
                 model_packages.extend(page.get('ModelPackageGroupSummaryList', []))
-            
+
             if not model_packages:
                 issues_found.append({
                     'component': 'Model Registry',
@@ -709,7 +845,7 @@ def check_sagemaker_mlops_utilization(permission_cache) -> Dict[str, Any]:
             paginator = sagemaker_client.get_paginator('list_feature_groups')
             for page in paginator.paginate():
                 feature_groups.extend(page.get('FeatureGroupSummaries', []))
-            
+
             if not feature_groups:
                 issues_found.append({
                     'component': 'Feature Store',
@@ -745,7 +881,7 @@ def check_sagemaker_mlops_utilization(permission_cache) -> Dict[str, Any]:
             paginator = sagemaker_client.get_paginator('list_pipelines')
             for page in paginator.paginate():
                 pipelines.extend(page.get('PipelineSummaries', []))
-            
+
             if not pipelines:
                 issues_found.append({
                     'component': 'Pipelines',
@@ -785,7 +921,7 @@ def check_sagemaker_mlops_utilization(permission_cache) -> Dict[str, Any]:
         if issues_found:
             findings['status'] = 'WARN'
             findings['details'] = f"Found {len(issues_found)} issues with SageMaker MLOps features"
-            
+
             for issue in issues_found:
                 findings['csv_data'].append(
                     create_finding(
@@ -857,14 +993,14 @@ def check_sagemaker_clarify_usage(permission_cache) -> Dict[str, Any]:
             # Check Processing Jobs for Clarify
             paginator = sagemaker_client.get_paginator('list_processing_jobs')
             clarify_jobs_found = False
-            
+
             for page in paginator.paginate():
                 for job in page['ProcessingJobSummaries']:
                     job_name = job['ProcessingJobName']
                     job_details = sagemaker_client.describe_processing_job(
                         ProcessingJobName=job_name
                     )
-                    
+
                     # Check if it's a Clarify job
                     if 'clarify' in job_details.get('AppSpecification', {}).get('ImageUri', '').lower():
                         clarify_jobs_found = True
@@ -895,7 +1031,7 @@ def check_sagemaker_clarify_usage(permission_cache) -> Dict[str, Any]:
             })
 
         if issues_found:
-            
+
             for issue in issues_found:
                 findings['csv_data'].append(
                     create_finding(
@@ -948,7 +1084,7 @@ def check_sagemaker_model_monitor_usage(permission_cache) -> Dict[str, Any]:
             # Check monitoring schedules
             paginator = sagemaker_client.get_paginator('list_monitoring_schedules')
             monitoring_found = False
-            
+
             for page in paginator.paginate():
                 for schedule in page['MonitoringScheduleSummaries']:
                     monitoring_found = True
@@ -956,7 +1092,7 @@ def check_sagemaker_model_monitor_usage(permission_cache) -> Dict[str, Any]:
                     schedule_details = sagemaker_client.describe_monitoring_schedule(
                         MonitoringScheduleName=schedule_name
                     )
-                    
+
                     # Check schedule status
                     if schedule_details['MonitoringScheduleStatus'] != 'Scheduled':
                         issues_found.append({
@@ -984,7 +1120,7 @@ def check_sagemaker_model_monitor_usage(permission_cache) -> Dict[str, Any]:
             })
 
         if issues_found:
-            
+
             for issue in issues_found:
                 findings['csv_data'].append(
                     create_finding(
@@ -1036,18 +1172,18 @@ def check_model_registry_usage(permission_cache) -> Dict[str, Any]:
             # Check Model Package Groups
             paginator = sagemaker_client.get_paginator('list_model_package_groups')
             registry_used = False
-            
+
             for page in paginator.paginate():
                 for group in page['ModelPackageGroupSummaryList']:
                     registry_used = True
                     group_name = group['ModelPackageGroupName']
-                    
+
                     # Check model versions in the group
                     try:
                         models = sagemaker_client.list_model_packages(
                             ModelPackageGroupName=group_name
                         )
-                        
+
                         if not models.get('ModelPackageSummaryList'):
                             issues_found.append({
                                 'issue_type': 'Empty Model Group',
@@ -1057,7 +1193,7 @@ def check_model_registry_usage(permission_cache) -> Dict[str, Any]:
                             })
                         else:
                             # Check model approval status
-                            approved_models = [m for m in models['ModelPackageSummaryList'] 
+                            approved_models = [m for m in models['ModelPackageSummaryList']
                                             if m.get('ModelApprovalStatus') == 'Approved']
                             if not approved_models:
                                 issues_found.append({
@@ -1066,7 +1202,7 @@ def check_model_registry_usage(permission_cache) -> Dict[str, Any]:
                                     'severity': 'Low',
                                     'status': 'Failed'
                                 })
-                    
+
                     except Exception as e:
                         logger.error(f"Error checking models in group {group_name}: {str(e)}")
                         issues_found.append({
@@ -1094,7 +1230,7 @@ def check_model_registry_usage(permission_cache) -> Dict[str, Any]:
             })
 
         if issues_found:
-            
+
             for issue in issues_found:
                 findings['csv_data'].append(
                     create_finding(
@@ -1135,7 +1271,7 @@ def get_role_usage(role_name: str) -> str:
     """
     logger.debug(f"Checking usage for role: {role_name}")
     usage_list = []
-    
+
     try:
         # Check Lambda functions
         lambda_client = boto3.client('lambda')
@@ -1146,7 +1282,7 @@ def get_role_usage(role_name: str) -> str:
                 logger.debug(f"Found role usage in Lambda: {function['FunctionName']}")
     except Exception as e:
         logger.error(f"Error checking Lambda usage: {str(e)}")
-    
+
     try:
         # Check ECS tasks
         ecs_client = boto3.client('ecs')
@@ -1161,7 +1297,7 @@ def get_role_usage(role_name: str) -> str:
                         logger.debug(f"Found role usage in ECS task: {task['taskArn']}")
     except Exception as e:
         logger.error(f"Error checking ECS usage: {str(e)}")
-    
+
     result = '; '.join(usage_list) if usage_list else 'No active usage found'
     logger.debug(f"Role usage result: {result}")
     return result
@@ -1172,7 +1308,7 @@ def handle_aws_throttling(func, *args, **kwargs):
     """
     max_retries = 5
     base_delay = 1  # Start with 1 second delay
-    
+
     for attempt in range(max_retries):
         try:
             return func(*args, **kwargs)
@@ -1194,13 +1330,13 @@ def generate_csv_report(findings: List[Dict[str, Any]]) -> str:
     csv_buffer = StringIO()
     fieldnames = ['Finding', 'Finding_Details', 'Resolution', 'Reference', 'Severity', 'Status']
     writer = csv.DictWriter(csv_buffer, fieldnames=fieldnames)
-    
+
     writer.writeheader()
     for finding in findings:
         if finding['csv_data']:
             for row in finding['csv_data']:
                 writer.writerow(row)
-    
+
     return csv_buffer.getvalue()
 def get_current_utc_date():
     return datetime.utcnow().strftime("%Y/%m/%d")
@@ -1212,7 +1348,7 @@ def write_to_s3(execution_id, csv_content: str, bucket_name: str) -> Dict[str, s
     logger.debug(f"Writing reports to S3 bucket: {bucket_name}")
     try:
         s3_client = boto3.client('s3', config=boto3_config)
-        
+
         # Upload CSV file
         date_string = get_current_utc_date()
         csv_file_name = f'sagemaker_security_report_{execution_id}.csv'
@@ -1222,7 +1358,7 @@ def write_to_s3(execution_id, csv_content: str, bucket_name: str) -> Dict[str, s
             Body=csv_content,
             ContentType='text/csv'
         )
-        
+
         return {
             'csv_url': f"https://{bucket_name}.s3.amazonaws.com/{csv_file_name}",
         }
@@ -1236,17 +1372,17 @@ def lambda_handler(event, context):
     """
     logger.info("Starting SageMaker security assessment")
     all_findings = []
-    
+
     try:
         # Initialize permission cache
         logger.info("Initializing IAM permission cache")
         execution_id = event["Execution"]["Name"]
         permission_cache = get_permissions_cache(execution_id)
-        
+
         if not permission_cache:
             logger.error("Permission cache not found - IAM permission caching may have failed")
             permission_cache = {"role_permissions": {}, "user_permissions": {}}
-                
+
         logger.info("Running SageMaker internet access check")
         sagemaker_internet_access_findings = check_sagemaker_internet_access()
         all_findings.append(sagemaker_internet_access_findings)
@@ -1282,14 +1418,14 @@ def lambda_handler(event, context):
         # Generate and upload report
         logger.info("Generating reports")
         csv_content = generate_csv_report(all_findings)
-        
+
         bucket_name = os.environ.get('AIML_ASSESSMENT_BUCKET_NAME')
         if not bucket_name:
             raise ValueError("AIML_ASSESSMENT_BUCKET_NAME environment variable is not set")
-        
+
         logger.info("Writing reports to S3")
         s3_url = write_to_s3(execution_id, csv_content, bucket_name)
-        
+
         return {
             'statusCode': 200,
             'body': {
@@ -1298,7 +1434,7 @@ def lambda_handler(event, context):
                 'report_url': s3_url
             }
         }
-        
+
     except Exception as e:
         logger.error(f"Error in lambda_handler: {str(e)}", exc_info=True)
         return {
