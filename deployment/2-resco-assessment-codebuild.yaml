@@ -23,12 +23,12 @@ Parameters:
   GitHubRepoUrl:
     Type: String
     Description: GitHub repository URL
-    Default: https://github.com/aws-samples/sample-resco-assessments
+    Default: https://github.com/aws-samples/sample-resco-aiml-assessment.git
   
   GitHubBranch:
     Type: String
     Description: GitHub branch to build from
-    Default: main
+    Default: add-agentcore
   
   ReSCORole:
     Description: 'The role that ReSCO should assume to perform the assessment.'
