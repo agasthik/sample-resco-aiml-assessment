@@ -45,7 +45,6 @@ This repo focus on performing security assessment for your workloads using [Amaz
 
 ### Prerequisites
 - AWS Organizations setup with management account access or delegated administrator member account.
-- StackSets service-linked roles configured
 
 ### The deployment follows a two-step approach:
 
