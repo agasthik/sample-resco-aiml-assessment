@@ -16,7 +16,7 @@ This repo focus on performing security assessment for your workloads using [Amaz
 
 | Module                                           | Description                | Lambda Functions                                   | Status    |
 | ------------------------------------------------ | -------------------------- | -------------------------------------------------- | --------- |
-| [resco-aiml-assessment](./resco-aiml-assessment) | AI/ML workload assessments | Bedrock Lambda, SageMaker Lambda, AgentCore Lambda | ✅ Active |
+| [resco-aiml-assessment](./resco-aiml-assessment) | AI/ML workload assessments | Bedrock Lambda, SageMaker Lambda, AgentCore Lambda | Active |
 
 ## Prerequisites
 
@@ -31,7 +31,7 @@ This repo focus on performing security assessment for your workloads using [Amaz
 ## Single-Account Deployment
 
 1. Download [aiml-security-assessment-single-account.yaml](deployment/aiml-security-assessment-single-account.yaml) CloudFormation template.
-2. 🚀 **[Deploy to AWS CloudFormation](https://console.aws.amazon.com/cloudformation/home#/stacks/create/template?stackName=resco-aiml-single-account)**
+2. **[Deploy to AWS CloudFormation](https://console.aws.amazon.com/cloudformation/home#/stacks/create/template?stackName=resco-aiml-single-account)**
 3. Upload CloudFormation template from step 1.
 4. Provide a stack name and optionally specify your email address to receive notifications.
 5. Leave all other parameters as default.
@@ -120,7 +120,7 @@ Deploy [2-resco-assessment-codebuild.yaml](deployment/2-resco-assessment-codebui
 
 ## Permissions Required
 
-### Central Account Role (`ReSCOCodeBuildRole`)
+### Central Account Role (`ReSCOMultiAccountCodeBuildRole`)
 
 - Assume roles in member accounts
 - List AWS Organizations accounts
@@ -197,10 +197,10 @@ The consolidated report provides a comprehensive view of security findings acros
 ### Understanding Results
 
 - **Severity Levels**:
-  - 🔴 **High**: Critical security issues requiring immediate attention
-  - 🟡 **Medium**: Important security improvements recommended
-  - 🔵 **Low**: Minor optimizations suggested
-  - ✅ **N/A**: No issues found or not applicable
+  - **High**: Critical security issues requiring immediate attention
+  - **Medium**: Important security improvements recommended
+  - **Low**: Minor optimizations suggested
+  - **N/A**: No issues found or not applicable
 
 - **Status**:
   - **Failed**: Security issue identified
