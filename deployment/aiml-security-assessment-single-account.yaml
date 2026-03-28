@@ -20,16 +20,20 @@ Parameters:
     Type: String
     Description: GitHub repository URL
     Default: https://github.com/aws-samples/sample-resco-assessments
-  
+    AllowedPattern: ^https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+(\.git)?$
+    ConstraintDescription: Must be a valid GitHub repository URL (e.g., https://github.com/owner/repo or https://github.com/owner/repo.git)
+
   GitHubBranch:
     Type: String
     Description: GitHub branch to build from
     Default: main
-  
+
   EmailAddress:
     Description: 'Email address to receive assessment completion notifications (optional)'
     Type: String
     Default: ''
+    AllowedPattern: ^$|^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
+    ConstraintDescription: Must be a valid email address or leave empty
   
   CodeBuildTimeout:
     Description: 'Timeout for the CodeBuild job in minutes'
@@ -81,7 +85,6 @@ Resources:
                   - sts:GetCallerIdentity
                   - bedrock:ListGuardrails
                   - bedrock:GetGuardrail
-                  - bedrock:ListModelInvocations
                   - bedrock:GetModelInvocationLoggingConfiguration
                   - bedrock:ListPrompts
                   - bedrock:GetPrompt
@@ -245,7 +248,6 @@ Resources:
 
   CodeBuildStartBuildLambda:
     Type: AWS::Lambda::Function
-    DependsOn: CodeBuildStartBuildLambdaRole
     Properties:
       Handler: index.lambda_handler
       Role: !GetAtt CodeBuildStartBuildLambdaRole.Arn
@@ -254,32 +256,47 @@ Resources:
       Code:
         ZipFile: |
           import boto3
+          import logging
           from botocore.exceptions import ClientError
           import cfnresponse
-                    
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
           def startBuild(event, context):
             responseData = {}
-            cb = boto3.client('codebuild')
             try:
-              print("Starting build...")
-              response = cb.start_build(projectName=event['ResourceProperties']['ProjectName'])
+              project_name = event.get('ResourceProperties', {}).get('ProjectName')
+              if not project_name:
+                raise ValueError("ProjectName is required")
+
+              cb = boto3.client('codebuild')
+              logger.info(f"Starting build for project: {project_name}")
+              response = cb.start_build(projectName=project_name)
               responseData['buildID'] = response['build']['id']
+              logger.info(f"Build started: {responseData['buildID']}")
               cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData)
             except ClientError as e:
-              print("Failed to start build")
-              print(e)
-              cfnresponse.send(event, context, cfnresponse.FAILED, e.response)
+              error_msg = e.response['Error']['Message']
+              logger.error(f"AWS error: {error_msg}")
+              cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': error_msg})
+            except Exception as e:
+              logger.error(f"Error: {str(e)}")
+              cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': str(e)})
 
           def no_op(event, context):
-            responseData = {}
-            cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData)
+            cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
 
-          def lambda_handler(event,context):
-            print(event)
-            if event['RequestType'] == 'Create':
-              startBuild(event, context)
-            else:
-              no_op(event,context)
+          def lambda_handler(event, context):
+            logger.info(f"Request type: {event.get('RequestType')}")
+            try:
+              if event['RequestType'] == 'Create':
+                startBuild(event, context)
+              else:
+                no_op(event, context)
+            except Exception as e:
+              logger.error(f"Unhandled error: {str(e)}")
+              cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': str(e)})
 
   CodeBuildStartBuild:
     Type: Custom::CodeBuildStartBuild
