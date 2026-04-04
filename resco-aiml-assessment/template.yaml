@@ -38,6 +38,7 @@ Resources:
   CleanupBucketFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub 'resco-aiml-${AWS::StackName}-CleanupBucket'
       CodeUri: functions/security/cleanup_bucket/
       Handler: app.lambda_handler
       Runtime: python3.12
@@ -53,8 +54,9 @@ Resources:
             BucketName: !Ref AIMLAssessmentBucket
 
   IAMPermissionCachingFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html
+    Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub 'resco-aiml-${AWS::StackName}-IAMPermissionCaching'
       CodeUri: functions/security/iam_permission_caching/
       Handler: app.lambda_handler
       Runtime: python3.12
@@ -87,8 +89,9 @@ Resources:
                 - sts:GetCallerIdentity
               Resource: '*'
   GenerateConsolidatedReportFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html
+    Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub 'resco-aiml-${AWS::StackName}-GenerateReport'
       CodeUri: functions/security/generate_consolidated_report/
       Handler: app.lambda_handler
       Runtime: python3.12
@@ -103,8 +106,9 @@ Resources:
         - S3CrudPolicy:
             BucketName: !Ref AIMLAssessmentBucket
   BedrockSecurityAssessmentFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html
+    Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub 'resco-aiml-${AWS::StackName}-BedrockAssessment'
       CodeUri: functions/security/bedrock_assessments/
       Handler: app.lambda_handler
       Runtime: python3.12
@@ -177,6 +181,7 @@ Resources:
   SagemakerSecurityAssessmentFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub 'resco-aiml-${AWS::StackName}-SagemakerAssessment'
       CodeUri: functions/security/sagemaker_assessments/
       Handler: app.lambda_handler
       Runtime: python3.12
@@ -263,6 +268,7 @@ Resources:
   AgentCoreSecurityAssessmentFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub 'resco-aiml-${AWS::StackName}-AgentCoreAssessment'
       CodeUri: functions/security/agentcore_assessments/
       Handler: app.lambda_handler
       Runtime: python3.12
