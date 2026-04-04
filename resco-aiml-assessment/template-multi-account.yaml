@@ -345,7 +345,6 @@ Resources:
   # S3 bucket (always created for local storage)
   AIMLAssessmentBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
     Properties:
       BucketName: !Sub ${AWS::StackName}-${AWS::AccountId}
       VersioningConfiguration:
