@@ -147,7 +147,7 @@ def consolidate_html_reports():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Account ReSCO AI/ML Security Assessment Report</title>
+    <title>Multi-Account AI/ML Security Assessment Report</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -288,7 +288,7 @@ def consolidate_html_reports():
 </head>
 <body>
     <header class="header">
-        <h1>Multi-Account ReSCO AI/ML Security Assessment</h1>
+        <h1>Multi-Account AI/ML Security Assessment</h1>
         <div class="header-right">
             <div class="header-meta">
                 <div>{num_accounts} Accounts</div>
@@ -334,13 +334,13 @@ def consolidate_html_reports():
                         <th class="no-filter">Resolution</th>
                         <th class="no-filter">Reference</th>
                         <th>Severity<select class="filter-select" data-column="5"><option value="">All Severities</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option><option value="n/a">N/A</option></select></th>
-                        <th>Status<select class="filter-select" data-column="6"><option value="">All Statuses</option><option value="failed">Failed</option><option value="passed">Passed</option></select></th>
+                        <th>Status<select class="filter-select" data-column="6"><option value="">All Statuses</option><option value="failed">Failed</option><option value="passed">Passed</option><option value="n/a">N/A</option></select></th>
                     </tr></thead>
                     <tbody>{rows}</tbody>
                 </table>
             </div>
         </section>
-        <footer class="report-footer"><p>ReSCO AI/ML Security Assessment | <a href="https://github.com/aws-samples/sample-resco-aiml-assessment">GitHub Repository</a></p></footer>
+        <footer class="report-footer"><p>AI/ML Security Assessment | <a href="https://github.com/aws-samples/sample-resco-aiml-assessment">GitHub Repository</a></p></footer>
     </main>
     <script>
         document.addEventListener('DOMContentLoaded', function() {{

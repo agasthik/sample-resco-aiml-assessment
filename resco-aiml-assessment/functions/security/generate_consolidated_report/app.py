@@ -23,55 +23,55 @@ logger.setLevel(logging.WARNING)
 def parse_csv_content(csv_content: str) -> List[Dict[str, str]]:
     """
     Parse CSV content into a list of dictionaries
-    
+
     Args:
         csv_content (str): CSV content as string
-    
+
     Returns:
         List[Dict[str, str]]: List of dictionaries where each dict represents a row
     """
     results = []
     csv_file = StringIO(csv_content)
     csv_reader = csv.DictReader(csv_file)
-    
+
     for row in csv_reader:
         results.append(dict(row))
-    
+
     return results
 
 def get_assessment_results(execution_id: str, account_id: str = None) -> Dict[str, Any]:
     """
     Download and parse Bedrock and SageMaker assessment CSV files for a given execution
-    
+
     Args:
         s3_bucket (str): Source S3 bucket name
         execution_id (str): Step Functions execution ID
-    
+
     Returns:
         Dict[str, Any]: Nested object containing all assessment results
     """
     try:
         s3_client = boto3.client('s3', config=boto3_config)
-        
+
         # List all CSV files with execution ID in filename (bucket root)
         s3_bucket = os.environ.get('AIML_ASSESSMENT_BUCKET_NAME')
         response = s3_client.list_objects_v2(
             Bucket=s3_bucket,
             Prefix=f'bedrock_security_report_{execution_id}'
         )
-        
+
         # Also check for SageMaker reports
         sagemaker_response = s3_client.list_objects_v2(
             Bucket=s3_bucket,
             Prefix=f'sagemaker_security_report_{execution_id}'
         )
-        
+
         # Also check for AgentCore reports
         agentcore_response = s3_client.list_objects_v2(
             Bucket=s3_bucket,
             Prefix=f'agentcore_security_report_{execution_id}'
         )
-        
+
         # Combine all responses
         all_objects = []
         if 'Contents' in response:
@@ -96,33 +96,33 @@ def get_assessment_results(execution_id: str, account_id: str = None) -> Dict[st
         # Process each CSV file
         for obj in all_objects:
             s3_key = obj['Key']
-            
+
             # Skip if not a CSV file
             if not s3_key.endswith('.csv'):
                 continue
-                
+
             try:
                 # Get the file content
                 response = s3_client.get_object(
                     Bucket=s3_bucket,
                     Key=s3_key
                 )
-                
+
                 # Read CSV content
                 csv_content = response['Body'].read().decode('utf-8')
-                
+
                 # Parse CSV content
                 parsed_data = parse_csv_content(csv_content)
-                
+
                 # Add account_id to each row if provided
                 if account_id:
                     for row in parsed_data:
                         row['Account_ID'] = account_id
-                
+
                 # Determine which category this file belongs to based on the path
                 file_name = os.path.basename(s3_key)
                 category = None
-                
+
                 if 'bedrock' in s3_key.lower():
                     category = 'bedrock'
                 elif 'sagemaker' in s3_key.lower():
@@ -132,24 +132,24 @@ def get_assessment_results(execution_id: str, account_id: str = None) -> Dict[st
                 else:
                     logger.warning(f"Unknown assessment type for file: {s3_key}")
                     continue
-                
+
                 # Store parsed data in appropriate category
                 assessment_type = file_name.replace('.csv', '').lower()
                 assessment_results[category][assessment_type] = parsed_data
-                
+
                 logger.info(f"Successfully processed {file_name} for {category} assessment")
-                
+
             except Exception as e:
                 logger.error(f"Error processing file {s3_key}: {str(e)}", exc_info=True)
                 continue
-        
+
         # Add summary information
         assessment_results['summary'] = {
-            'total_files_processed': len(assessment_results['bedrock']) + 
+            'total_files_processed': len(assessment_results['bedrock']) +
                                    len(assessment_results['sagemaker']) +
                                    len(assessment_results['agentcore']),
             'categories_found': [
-                cat for cat in ['bedrock', 'sagemaker', 'agentcore'] 
+                cat for cat in ['bedrock', 'sagemaker', 'agentcore']
                 if assessment_results[cat]
             ],
             'rows': assessment_results['bedrock'],
@@ -159,9 +159,9 @@ def get_assessment_results(execution_id: str, account_id: str = None) -> Dict[st
                 'agentcore': list(assessment_results['agentcore'].keys())
             }
         }
-        
+
         return assessment_results
-        
+
     except ClientError as e:
         if e.response['Error']['Code'] == 'NoSuchBucket':
             logger.error(f"Bucket not found: {s3_bucket}")
@@ -222,7 +222,7 @@ def generate_html_report(assessment_results):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReSCO AI/ML Security Assessment Report</title>
+    <title>AI/ML Security Assessment Report</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -363,7 +363,7 @@ def generate_html_report(assessment_results):
 </head>
 <body>
     <header class="header">
-        <h1>ReSCO AI/ML Security Assessment</h1>
+        <h1>AI/ML Security Assessment</h1>
         <div class="header-right">
             <div class="header-meta">
                 <div>Account: {account_id}</div>
@@ -409,13 +409,13 @@ def generate_html_report(assessment_results):
                         <th class="no-filter">Resolution</th>
                         <th class="no-filter">Reference</th>
                         <th>Severity<select class="filter-select" data-column="5"><option value="">All Severities</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option><option value="n/a">N/A</option></select></th>
-                        <th>Status<select class="filter-select" data-column="6"><option value="">All Statuses</option><option value="failed">Failed</option><option value="passed">Passed</option></select></th>
+                        <th>Status<select class="filter-select" data-column="6"><option value="">All Statuses</option><option value="failed">Failed</option><option value="passed">Passed</option><option value="n/a">N/A</option></select></th>
                     </tr></thead>
                     <tbody>{rows}</tbody>
                 </table>
             </div>
         </section>
-        <footer class="report-footer"><p>ReSCO AI/ML Security Assessment | <a href="https://github.com/aws-samples/sample-resco-aiml-assessment">GitHub Repository</a></p></footer>
+        <footer class="report-footer"><p> AI/ML Security Assessment | <a href="https://github.com/aws-samples/sample-resco-aiml-assessment">GitHub Repository</a></p></footer>
     </main>
     <script>
         document.addEventListener('DOMContentLoaded', function() {{
@@ -523,22 +523,22 @@ def get_current_utc_date():
 def write_html_to_s3(html_content: str, s3_bucket: str, execution_id: str, account_id: str = None) -> Optional[str]:
     """
     Write HTML report to S3
-    
+
     Args:
         html_content (str): HTML content to write
         s3_bucket (str): Destination S3 bucket name
         execution_id (str): Step Functions execution ID
-    
+
     Returns:
         Optional[str]: S3 key if successful, None if error
     """
     try:
         s3_client = boto3.client('s3', config=boto3_config)
-        
+
         # Generate the S3 key for local bucket (no account folder needed)
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         s3_key = f'security_assessment_{timestamp}_{execution_id}.html'
-        
+
         # Upload the HTML file
         s3_client.put_object(
             Bucket=s3_bucket,
@@ -549,10 +549,10 @@ def write_html_to_s3(html_content: str, s3_bucket: str, execution_id: str, accou
                 'execution-id': execution_id
             }
         )
-        
+
         logger.info(f"Successfully wrote HTML report to s3://{s3_bucket}/{s3_key}")
         return s3_key
-        
+
     except Exception as e:
         logger.error(f"Error writing HTML report to S3: {str(e)}", exc_info=True)
         return None
@@ -563,29 +563,29 @@ def consolidate_multi_account_reports(central_bucket: str):
     """
     try:
         from bs4 import BeautifulSoup
-        
+
         # This would need to be implemented to download from other account buckets
         # For now, just create a placeholder consolidated report
         logger.info("Multi-account consolidation placeholder - would download from other accounts")
-        
+
         consolidated_html = '''<!DOCTYPE html>
 <html><head><title>Multi-Account Consolidated Report</title></head>
 <body><h1>Multi-Account Assessment Report</h1>
 <p>Individual account reports have been generated. Manual consolidation required.</p></body></html>'''
-        
+
         s3_client = boto3.client('s3')
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         s3_key = f'consolidated_report_{timestamp}.html'
-        
+
         s3_client.put_object(
             Bucket=central_bucket,
             Key=s3_key,
             Body=consolidated_html,
             ContentType='text/html'
         )
-        
+
         logger.info(f"Consolidated report saved: s3://{central_bucket}/{s3_key}")
-        
+
     except Exception as e:
         logger.error(f"Error in consolidation: {str(e)}")
         raise
@@ -607,33 +607,33 @@ def lambda_handler(event, context):
         s3_bucket = os.environ.get('AIML_ASSESSMENT_BUCKET_NAME')
         if not s3_bucket:
             raise ValueError("AIML_ASSESSMENT_BUCKET_NAME environment variable is required")
-        
+
         # Get assessment results
         assessment_results = get_assessment_results(execution_id, account_id)
         if not assessment_results:
             raise ValueError(f"No assessment results found: {execution_id}")
-        
+
         # Generate HTML report
         html_content = generate_html_report(assessment_results)
-        
+
         # Write HTML report to S3
         s3_key = write_html_to_s3(html_content, s3_bucket, execution_id, account_id)
-        
+
         if not s3_key:
             raise Exception("Failed to write HTML report to S3")
-        
+
         # Check if this is management account and consolidate multi-account reports
         try:
             sts_client = boto3.client('sts')
             current_account = sts_client.get_caller_identity()['Account']
-            
+
             # Simple check: if we're in management account, try consolidation
             if current_account == account_id:
                 logger.info("Attempting multi-account consolidation")
                 consolidate_multi_account_reports(s3_bucket)
         except Exception as e:
             logger.warning(f"Multi-account consolidation failed: {str(e)}")
-        
+
         return {
             'statusCode': 200,
             'executionId': execution_id,

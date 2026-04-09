@@ -1,4 +1,4 @@
-# ReSCO AI/ML Security Assessments
+# AI/ML Security Assessments
 
 ## Overview
 
