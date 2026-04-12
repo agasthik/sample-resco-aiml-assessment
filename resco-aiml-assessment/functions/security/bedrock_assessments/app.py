@@ -312,7 +312,7 @@ def check_stale_bedrock_access(permission_cache) -> Dict[str, Any]:
                                         'last_accessed': None
                                     })
                         break
-                    time.sleep(1)
+                    time.sleep(1)  # nosemgrep: arbitrary-sleep
                     wait_time += 1
 
                 # Log warning if job timed out
