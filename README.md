@@ -6,6 +6,11 @@ This project provides a framework for performing security assessments of AI/ML w
 
 This assessment framework is designed for workloads using [Amazon Bedrock](https://aws.amazon.com/bedrock/), [Amazon Bedrock AgentCore](https://aws.github.io/bedrock-agentcore-starter-toolkit/), or [Amazon SageMaker AI](https://aws.amazon.com/sagemaker/ai/).
 
+The framework performs **43 security checks** across these services, aligned with AWS Security Hub controls and security best practices:
+- **Amazon Bedrock**: 14 checks (guardrails, encryption, VPC endpoints, IAM permissions)
+- **Amazon SageMaker**: 16 checks (SageMaker.1-5 controls, encryption, network isolation, IAM)
+- **Amazon Bedrock AgentCore**: 13 checks (VPC configuration, encryption, observability, resource policies)
+
 
 ## Prerequisites
 
@@ -30,10 +35,21 @@ This assessment framework is designed for workloads using [Amazon Bedrock](https
 9. Once complete, AWS CodeBuild automatically deploys the assessment stack and runs the assessment.
 10. To view results:
     - Navigate to the CloudFormation console
-    - Open the `aiml-sec-{account_id}` stack (created by SAM, e.g., `aiml-sec-123456789012`)
+    - Open the stack you deployed (e.g., `resco-aiml-single-account` or your custom name)
     - Go to the **Outputs** tab
-    - Copy the `AssessmentBucketName` value
-    - Navigate to that S3 bucket and open the `security_assessment_*.html` file
+    - Copy the `AssessmentBucket` value
+    - Navigate to that S3 bucket and open the `{account_id}/security_assessment_*.html` file
+
+### Understanding Stack Names
+
+The deployment creates **two types of CloudFormation stacks**:
+
+| Stack Type | Name | Purpose |
+|------------|------|---------|
+| **Infrastructure Stack** | User-chosen (e.g., `my-resco-assessment`) | Contains CodeBuild, S3 bucket for results, IAM roles. This is the stack you deploy manually. |
+| **Assessment Stack** | `aiml-sec-{account_id}` (auto-generated) | Contains Lambda functions and Step Functions for running checks. Created automatically by CodeBuild via SAM. |
+
+When viewing results, use the **Infrastructure Stack** outputs (the stack you named). The assessment stack is for internal use.
 
 ## Multi-Account Deployment
 
@@ -148,10 +164,12 @@ You can check the AWS CodeBuild console to ensure that the assessment has comple
 
 1. **Find the S3 Bucket Name**:
    - Navigate to **CloudFormation** > **Stacks** in the AWS Console
-   - For single-account deployments, select the `aiml-sec-{account_id}` stack (e.g., `aiml-sec-123456789012`) and find the `AssessmentBucketName` output
+   - For single-account deployments using the standalone template (`aiml-security-assessment-single-account.yaml`), select the stack you deployed (e.g., `rescoaiml-standalonerole-mgmt`) and find the `AssessmentBucket` output. Results are synced to this bucket under the `{account_id}/` prefix.
    - For multi-account deployments, select the `resco-aiml-multi-account` stack created in [Step 2: Deploy Central Infrastructure](#step-2-deploy-central-infrastructure) and find the `AssessmentBucket` output
    - Go to the **Outputs** tab
    - Copy the S3 bucket name
+
+   > **Note**: The deployment creates multiple S3 buckets. Only use the bucket from the `AssessmentBucket` output above. Other buckets (e.g., `aiml-sec-*-aimlassessmentbucket-*` from nested stacks or `aws-sam-cli-managed-*` for deployment artifacts) are for internal use and can be ignored.
 
 2. **Navigate to the S3 Bucket**:
    - Go to **S3** in the AWS Console
@@ -193,7 +211,7 @@ The assessment generates professional HTML reports with interactive features inc
 **Example reports are available in the [`sample-reports/`](sample-reports/) folder:**
 
 - [Single Account Report](sample-reports/security_assessment_single_account.html) - Assessment for one AWS account
-- [Multi-Account Report](sample-reports/multi_account_report.html) - Consolidated view across multiple accounts
+- [Multi-Account Report](sample-reports/security_assessment_multi_account.html) - Consolidated view across multiple accounts
 
 The reports include:
 
@@ -341,16 +359,82 @@ To remove all resources deployed for multi-account assessment:
 ### Cleanup Order
 
 For a clean removal, delete resources in this order:
-1. AWS SAM-deployed assessment stacks in all accounts:
-   - Single-account: `aiml-sec-{account_id}`
-   - Multi-account: `resco-aiml-security-{account_id}` and `resco-aiml-security-mgmt`
-2. Central infrastructure stack (`resco-aiml-single-account` or `resco-aiml-multi-account`)
+
+1. **Assessment stacks** (auto-created by SAM):
+   - Single-account: `aiml-sec-{account_id}` (e.g., `aiml-sec-123456789012`)
+   - Multi-account: `resco-aiml-security-{account_id}` per member account, plus `resco-aiml-security-mgmt` for management account
+
+2. **Infrastructure stack** (the stack you deployed manually):
+   - Single-account: Your chosen stack name (e.g., `my-resco-assessment`)
+   - Multi-account: `resco-aiml-multi-account` or your chosen name
+
 3. AWS CloudFormation StackSet member roles (multi-account only)
+
 4. Any remaining Amazon S3 buckets manually
 
 ## Contributing
 
 We welcome community contributions! Please see [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for guidelines.
+
+## Security Checks Reference
+
+### Amazon SageMaker Checks (16)
+
+| Check | Description | AWS Security Hub Control |
+|-------|-------------|--------------------------|
+| Notebook Encryption | Verifies notebook instances use customer-managed KMS keys | SageMaker.1 |
+| Notebook VPC Deployment | Ensures notebooks are deployed within a VPC | SageMaker.2 |
+| Notebook Root Access | Validates root access is disabled on notebooks | SageMaker.3 |
+| Model Network Isolation | Checks inference containers have network isolation | SageMaker.4 |
+| Endpoint Instance Count | Verifies endpoints have 2+ instances for HA | SageMaker.5 |
+| Domain Encryption | Validates SageMaker Studio domain encryption | - |
+| Training Job Encryption | Checks training jobs use encrypted storage | - |
+| IAM Least Privilege | Identifies overly permissive SageMaker IAM policies | - |
+| Unused Permissions | Detects unused SageMaker permissions | - |
+| GuardDuty Integration | Verifies GuardDuty runtime threat detection | - |
+| Model Registry Access | Validates model package group permissions | - |
+| Feature Store Encryption | Checks feature group encryption settings | - |
+| Pipeline Security | Validates pipeline configurations | - |
+| Processing Job Encryption | Verifies processing job encryption | - |
+| Monitoring Network Isolation | Checks monitoring job network isolation | - |
+| Data Quality Encryption | Validates data quality job encryption | - |
+
+### Amazon Bedrock Checks (14)
+
+| Check | Description |
+|-------|-------------|
+| VPC Endpoint Configuration | Validates Bedrock VPC endpoints exist for private connectivity |
+| Guardrail Configuration | Verifies guardrails are configured and enforced |
+| Model Invocation Logging | Checks invocation logging is enabled |
+| Invocation Log Encryption | Verifies logs are encrypted with KMS |
+| Custom Model Encryption | Validates custom models use customer-managed KMS keys |
+| Knowledge Base Encryption | Checks knowledge base encryption settings |
+| Guardrail IAM Enforcement | Verifies guardrails are enforced via IAM conditions |
+| Flows Guardrails | Validates Bedrock Flows have guardrails attached |
+| Agent IAM Configuration | Checks agent execution role permissions |
+| Prompt Management | Validates Bedrock Prompt template security |
+| IAM Least Privilege | Identifies overly permissive Bedrock IAM policies |
+| Unused Permissions | Detects unused Bedrock API permissions |
+| Knowledge Base IAM | Validates knowledge base IAM permissions |
+| Flows IAM Configuration | Checks flows IAM permissions |
+
+### Amazon Bedrock AgentCore Checks (13)
+
+| Check | Description |
+|-------|-------------|
+| Runtime VPC Configuration | Validates agent runtimes have proper VPC settings |
+| Runtime Encryption | Verifies runtime encryption at rest |
+| Memory Encryption | Checks agent memory encryption with KMS |
+| Gateway Security | Validates gateway security configuration |
+| Gateway Encryption | Verifies gateway encryption settings |
+| Network Egress Controls | Checks for NAT gateway or VPC endpoints for egress |
+| ECR Repository Encryption | Validates ECR repositories use encryption |
+| Logging Configuration | Verifies CloudWatch Logs are configured |
+| Metrics Configuration | Checks metrics export configuration |
+| VPC Endpoints | Validates VPC endpoints for AgentCore services |
+| Service-Linked Role | Verifies the AgentCore service-linked role exists |
+| Resource-Based Policies | Checks runtime and gateway resource policies |
+| Policy Engine Encryption | Validates policy engine encryption settings |
 
 ## Security
 
