@@ -311,7 +311,7 @@ def check_agentcore_vpc_configuration() -> List[Dict[str, Any]]:
                 check_id="AC-01",
                 finding_name="AgentCore VPC Configuration Check",
                 finding_details="No AgentCore resources found or all resources have proper VPC configuration",
-                resolution="N/A",
+                resolution="No action required",
                 reference="https://aws.github.io/bedrock-agentcore-starter-toolkit/user-guide/security/agentcore-vpc.md",
                 severity=SeverityEnum.NA,
                 status=StatusEnum.NA
@@ -360,7 +360,7 @@ def check_agentcore_full_access_roles(permission_cache: Dict[str, Any]) -> List[
                 check_id="AC-02",
                 finding_name="AgentCore IAM Full Access Check",
                 finding_details="No IAM role permissions found in cache",
-                resolution="N/A",
+                resolution="No action required",
                 reference="https://docs.aws.amazon.com/bedrock/latest/userguide/security-iam-awsmanpol.html",
                 severity=SeverityEnum.NA,
                 status=StatusEnum.NA
@@ -445,10 +445,10 @@ def check_agentcore_full_access_roles(permission_cache: Dict[str, Any]) -> List[
                 check_id="AC-02",
                 finding_name="AgentCore IAM Full Access Check",
                 finding_details="No roles with overly permissive AgentCore access found",
-                resolution="N/A",
+                resolution="No action required",
                 reference="https://docs.aws.amazon.com/bedrock/latest/userguide/security-iam-awsmanpol.html",
                 severity=SeverityEnum.NA,
-                status=StatusEnum.PASSED
+                status=StatusEnum.NA
             ))
 
     except Exception as e:
@@ -499,7 +499,7 @@ def check_stale_agentcore_access(permission_cache: Dict[str, Any]) -> List[Dict[
                 check_id="AC-03",
                 finding_name="AgentCore Stale Access Check",
                 finding_details="No IAM permissions found in cache",
-                resolution="N/A",
+                resolution="No action required",
                 reference="https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_last-accessed.html",
                 severity=SeverityEnum.NA,
                 status=StatusEnum.NA
@@ -621,10 +621,10 @@ def check_stale_agentcore_access(permission_cache: Dict[str, Any]) -> List[Dict[
                 check_id="AC-03",
                 finding_name="AgentCore Stale Access Check",
                 finding_details="No IAM principals with AgentCore permissions found",
-                resolution="N/A",
+                resolution="No action required",
                 reference="https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_last-accessed.html",
                 severity=SeverityEnum.NA,
-                status=StatusEnum.PASSED
+                status=StatusEnum.NA
             ))
             return findings
         
@@ -777,7 +777,7 @@ def check_stale_agentcore_access(permission_cache: Dict[str, Any]) -> List[Dict[
                 check_id="AC-03",
                 finding_name="AgentCore Stale Access Check",
                 finding_details=f"All {len(agentcore_principals)} principals with AgentCore permissions have accessed the service within the last 60 days",
-                resolution="N/A",
+                resolution="No action required",
                 reference="https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_last-accessed.html",
                 severity=SeverityEnum.NA,
                 status=StatusEnum.PASSED
@@ -909,7 +909,7 @@ def check_agentcore_observability() -> List[Dict[str, Any]]:
                 check_id="AC-04",
                 finding_name="AgentCore Observability Check",
                 finding_details="No AgentCore resources found or all resources have proper observability configuration",
-                resolution="N/A",
+                resolution="No action required",
                 reference="https://aws.github.io/bedrock-agentcore-starter-toolkit/user-guide/observability/",
                 severity=SeverityEnum.NA,
                 status=StatusEnum.NA
@@ -1002,7 +1002,7 @@ def check_agentcore_encryption() -> List[Dict[str, Any]]:
                 check_id="AC-05",
                 finding_name="AgentCore Encryption Check",
                 finding_details="No AgentCore resources found or all resources have proper encryption configuration",
-                resolution="N/A",
+                resolution="No action required",
                 reference="https://docs.aws.amazon.com/bedrock/latest/userguide/key-management.html",
                 severity=SeverityEnum.NA,
                 status=StatusEnum.NA
@@ -1063,7 +1063,7 @@ def check_browser_tool_recording() -> List[Dict[str, Any]]:
                 check_id="AC-06",
                 finding_name="AgentCore Browser Tool Recording Check",
                 finding_details="No AgentCore Runtimes found to check browser tool configuration",
-                resolution="N/A",
+                resolution="No action required",
                 reference="https://aws.github.io/bedrock-agentcore-starter-toolkit/user-guide/browser/",
                 severity=SeverityEnum.NA,
                 status=StatusEnum.NA
@@ -1104,7 +1104,7 @@ def check_browser_tool_recording() -> List[Dict[str, Any]]:
                 check_id="AC-06",
                 finding_name="AgentCore Browser Tool Recording Check",
                 finding_details=f"All {len(runtimes)} Runtimes have proper storage configuration",
-                resolution="N/A",
+                resolution="No action required",
                 reference="https://aws.github.io/bedrock-agentcore-starter-toolkit/user-guide/browser/",
                 severity=SeverityEnum.NA,
                 status=StatusEnum.PASSED
@@ -1164,7 +1164,7 @@ def check_agentcore_memory_configuration() -> List[Dict[str, Any]]:
                 check_id="AC-07",
                 finding_name="AgentCore Memory Configuration Check",
                 finding_details="No Memory resources found",
-                resolution="N/A",
+                resolution="No action required",
                 reference="https://aws.github.io/bedrock-agentcore-starter-toolkit/user-guide/memory/",
                 severity=SeverityEnum.NA,
                 status=StatusEnum.NA
@@ -1204,7 +1204,7 @@ def check_agentcore_memory_configuration() -> List[Dict[str, Any]]:
                 check_id="AC-07",
                 finding_name="AgentCore Memory Configuration Check",
                 finding_details=f"All {len(memories)} Memory resources have proper configuration",
-                resolution="N/A",
+                resolution="No action required",
                 reference="https://aws.github.io/bedrock-agentcore-starter-toolkit/user-guide/memory/",
                 severity=SeverityEnum.NA,
                 status=StatusEnum.PASSED
@@ -1263,7 +1263,7 @@ def check_agentcore_vpc_endpoints() -> List[Dict[str, Any]]:
                 check_id="AC-08",
                 finding_name="AgentCore VPC Endpoints Check",
                 finding_details="No VPCs found in the account",
-                resolution="N/A",
+                resolution="No action required",
                 reference="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/vpc.html",
                 severity=SeverityEnum.NA,
                 status=StatusEnum.NA
@@ -1321,7 +1321,7 @@ def check_agentcore_vpc_endpoints() -> List[Dict[str, Any]]:
                     check_id="AC-08",
                     finding_name="AgentCore VPC Endpoints Check",
                     finding_details=f"AgentCore VPC endpoints configured: {endpoint_details}",
-                    resolution="N/A",
+                    resolution="No action required",
                     reference="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/vpc.html",
                     severity=SeverityEnum.NA,
                     status=StatusEnum.PASSED
@@ -1383,7 +1383,7 @@ def check_agentcore_service_linked_role() -> List[Dict[str, Any]]:
                     check_id="AC-09",
                     finding_name="AgentCore Service-Linked Role Check",
                     finding_details=f"Service-linked role '{slr_name}' exists and is properly configured for AgentCore VPC networking",
-                    resolution="N/A",
+                    resolution="No action required",
                     reference="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-vpc.html",
                     severity=SeverityEnum.NA,
                     status=StatusEnum.PASSED
@@ -1564,7 +1564,7 @@ def check_agentcore_resource_based_policies() -> List[Dict[str, Any]]:
                     check_id="AC-10",
                     finding_name="AgentCore Resource-Based Policies Check",
                     finding_details=f"Resource-based policies configured on: {', '.join(resources_with_rbp)}",
-                    resolution="N/A",
+                    resolution="No action required",
                     reference="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/security_iam_service-with-iam.html",
                     severity=SeverityEnum.NA,
                     status=StatusEnum.PASSED
@@ -1574,7 +1574,7 @@ def check_agentcore_resource_based_policies() -> List[Dict[str, Any]]:
                     check_id="AC-10",
                     finding_name="AgentCore Resource-Based Policies Check",
                     finding_details="No AgentCore resources found to check for resource-based policies",
-                    resolution="N/A",
+                    resolution="No action required",
                     reference="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/security_iam_service-with-iam.html",
                     severity=SeverityEnum.NA,
                     status=StatusEnum.NA
@@ -1632,7 +1632,7 @@ def check_agentcore_policy_engine_encryption() -> List[Dict[str, Any]]:
                     check_id="AC-11",
                     finding_name="AgentCore Policy Engine Encryption Check",
                     finding_details="No Policy Engines found",
-                    resolution="N/A",
+                    resolution="No action required",
                     reference="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy-encryption.html",
                     severity=SeverityEnum.NA,
                     status=StatusEnum.NA
@@ -1683,7 +1683,7 @@ def check_agentcore_policy_engine_encryption() -> List[Dict[str, Any]]:
                     check_id="AC-11",
                     finding_name="AgentCore Policy Engine Encryption Check",
                     finding_details=f"Policy Engines with CMK encryption: {', '.join(engines_with_cmk)}",
-                    resolution="N/A",
+                    resolution="No action required",
                     reference="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy-encryption.html",
                     severity=SeverityEnum.NA,
                     status=StatusEnum.PASSED
@@ -1694,7 +1694,7 @@ def check_agentcore_policy_engine_encryption() -> List[Dict[str, Any]]:
                     check_id="AC-11",
                     finding_name="AgentCore Policy Engine Encryption Check",
                     finding_details=f"Checked {len(policy_engines)} Policy Engines",
-                    resolution="N/A",
+                    resolution="No action required",
                     reference="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy-encryption.html",
                     severity=SeverityEnum.NA,
                     status=StatusEnum.NA
@@ -1763,7 +1763,7 @@ def check_agentcore_gateway_encryption() -> List[Dict[str, Any]]:
                     check_id="AC-12",
                     finding_name="AgentCore Gateway Encryption Check",
                     finding_details="No Gateways found",
-                    resolution="N/A",
+                    resolution="No action required",
                     reference="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/data-encryption.html",
                     severity=SeverityEnum.NA,
                     status=StatusEnum.NA
@@ -1814,7 +1814,7 @@ def check_agentcore_gateway_encryption() -> List[Dict[str, Any]]:
                     check_id="AC-12",
                     finding_name="AgentCore Gateway Encryption Check",
                     finding_details=f"Gateways with CMK encryption: {', '.join(gateways_with_cmk)}",
-                    resolution="N/A",
+                    resolution="No action required",
                     reference="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/data-encryption.html",
                     severity=SeverityEnum.NA,
                     status=StatusEnum.PASSED
@@ -1825,7 +1825,7 @@ def check_agentcore_gateway_encryption() -> List[Dict[str, Any]]:
                     check_id="AC-12",
                     finding_name="AgentCore Gateway Encryption Check",
                     finding_details=f"Checked {len(gateways)} Gateways",
-                    resolution="N/A",
+                    resolution="No action required",
                     reference="https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/data-encryption.html",
                     severity=SeverityEnum.NA,
                     status=StatusEnum.NA
@@ -1895,7 +1895,7 @@ def check_agentcore_gateway_configuration() -> List[Dict[str, Any]]:
                     check_id="AC-13",
                     finding_name="AgentCore Gateway Configuration Check",
                     finding_details="No Gateway resources found",
-                    resolution="N/A",
+                    resolution="No action required",
                     reference="https://aws.github.io/bedrock-agentcore-starter-toolkit/user-guide/gateway/",
                     severity=SeverityEnum.NA,
                     status=StatusEnum.NA
@@ -1918,7 +1918,7 @@ def check_agentcore_gateway_configuration() -> List[Dict[str, Any]]:
                 check_id="AC-13",
                 finding_name="AgentCore Gateway Configuration Check",
                 finding_details=f"Found {len(gateways)} Gateway resources",
-                resolution="N/A",
+                resolution="No action required",
                 reference="https://aws.github.io/bedrock-agentcore-starter-toolkit/user-guide/gateway/",
                 severity=SeverityEnum.NA,
                 status=StatusEnum.PASSED
@@ -1943,7 +1943,7 @@ def check_agentcore_gateway_configuration() -> List[Dict[str, Any]]:
                     check_id="AC-13",
                     finding_name="AgentCore Gateway Configuration Check",
                     finding_details="No Gateway resources found",
-                    resolution="N/A",
+                    resolution="No action required",
                     reference="https://aws.github.io/bedrock-agentcore-starter-toolkit/user-guide/gateway/",
                     severity=SeverityEnum.NA,
                     status=StatusEnum.NA

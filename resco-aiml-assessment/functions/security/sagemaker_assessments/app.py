@@ -170,7 +170,7 @@ def check_sagemaker_internet_access() -> Dict[str, Any]:
                 check_id="SM-01",
                 finding_name= 'SageMaker Internet Access Check',
                 finding_details= 'All SageMaker resources are properly configured to use VPC connectivity',
-                resolution='',
+                resolution='No action required',
                 reference="https://docs.aws.amazon.com/sagemaker/latest/dg/infrastructure-security.html",
                 severity='N/A',
                 status='Passed'
@@ -225,7 +225,7 @@ def check_guardduty_enabled() -> Dict[str, Any]:
                     check_id="SM-04",
                     finding_name='GuardDuty Enabled',
                     finding_details='Amazon GuardDuty is properly enabled and monitoring for security threats in SageMaker workloads.',
-                    resolution='',
+                    resolution='No action required',
                     reference='https://docs.aws.amazon.com/guardduty/latest/ug/ai-protection.html',
                     severity='N/A',
                     status='Passed'
@@ -420,7 +420,7 @@ def check_sagemaker_iam_permissions(permission_cache) -> Dict[str, Any]:
                     check_id="SM-02",
                     finding_name='SageMaker IAM Permissions Check',
                     finding_details='No issues found with IAM permissions, SSO is enabled, and no stale access detected',
-                    resolution='',
+                    resolution='No action required',
                     reference="https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/security-iam.html",
                     severity='N/A',
                     status='Passed'
@@ -647,7 +647,7 @@ def check_sagemaker_data_protection() -> Dict[str, Any]:
                     check_id="SM-03",
                     finding_name='Data Protection Check',
                     finding_details='All resources use appropriate encryption configurations',
-                    resolution='',
+                    resolution='No action required',
                     reference="https://docs.aws.amazon.com/sagemaker/latest/dg/security.html",
                     severity='N/A',
                     status='Passed'
@@ -819,7 +819,7 @@ def check_sagemaker_mlops_utilization(permission_cache) -> Dict[str, Any]:
                     check_id="SM-05",
                     finding_name='SageMaker MLOps Features Check',
                     finding_details='All SageMaker MLOps features are properly utilized',
-                    resolution='',
+                    resolution='No action required',
                     reference='https://docs.aws.amazon.com/sagemaker/latest/dg/mlops.html',
                     severity='N/A',
                     status='Passed'
@@ -931,7 +931,7 @@ def check_sagemaker_clarify_usage(permission_cache) -> Dict[str, Any]:
                     check_id="SM-06",
                     finding_name='SageMaker Clarify Usage Check',
                     finding_details='SageMaker Clarify is properly utilized',
-                    resolution='',
+                    resolution='No action required',
                     reference='https://docs.aws.amazon.com/sagemaker/latest/dg/clarify-configure-processing-jobs.html',
                     severity='N/A',
                     status='Passed'
@@ -1021,7 +1021,7 @@ def check_sagemaker_model_monitor_usage(permission_cache) -> Dict[str, Any]:
                     check_id="SM-07",
                     finding_name='SageMaker Model Monitor Usage Check',
                     finding_details='SageMaker Model Monitor is actively tracking model performance',
-                    resolution='',
+                    resolution='No action required',
                     reference='https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor.html',
                     severity='N/A',
                     status='Passed'
@@ -1093,18 +1093,32 @@ def check_sagemaker_notebook_root_access() -> Dict[str, Any]:
                     )
                 )
         else:
-            detail_msg = f"All {len(notebooks_without_root)} notebook instances have root access disabled" if notebooks_without_root else "No notebook instances found"
-            findings['csv_data'].append(
-                create_finding(
-                    check_id="SM-09",
-                    finding_name='SageMaker Notebook Root Access Check',
-                    finding_details=detail_msg,
-                    resolution='',
-                    reference="https://docs.aws.amazon.com/sagemaker/latest/dg/nbi-root-access.html",
-                    severity='N/A',
-                    status='Passed'
+            if notebooks_without_root:
+                # Notebooks exist and all have root access disabled - Passed
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-09",
+                        finding_name='SageMaker Notebook Root Access Check',
+                        finding_details=f"All {len(notebooks_without_root)} notebook instances have root access disabled",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/nbi-root-access.html",
+                        severity='N/A',
+                        status='Passed'
+                    )
                 )
-            )
+            else:
+                # No notebook instances found - N/A
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-09",
+                        finding_name='SageMaker Notebook Root Access Check',
+                        finding_details="No notebook instances found",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/nbi-root-access.html",
+                        severity='N/A',
+                        status='N/A'
+                    )
+                )
 
         return findings
 
@@ -1173,18 +1187,32 @@ def check_sagemaker_notebook_vpc_deployment() -> Dict[str, Any]:
                     )
                 )
         else:
-            detail_msg = f"All {len(notebooks_with_vpc)} notebook instances are deployed in custom VPCs" if notebooks_with_vpc else "No notebook instances found"
-            findings['csv_data'].append(
-                create_finding(
-                    check_id="SM-10",
-                    finding_name='SageMaker Notebook VPC Deployment Check',
-                    finding_details=detail_msg,
-                    resolution='',
-                    reference="https://docs.aws.amazon.com/sagemaker/latest/dg/appendix-notebook-and-internet-access.html",
-                    severity='N/A',
-                    status='Passed'
+            if notebooks_with_vpc:
+                # Notebooks exist and all are in VPCs - Passed
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-10",
+                        finding_name='SageMaker Notebook VPC Deployment Check',
+                        finding_details=f"All {len(notebooks_with_vpc)} notebook instances are deployed in custom VPCs",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/appendix-notebook-and-internet-access.html",
+                        severity='N/A',
+                        status='Passed'
+                    )
                 )
-            )
+            else:
+                # No notebook instances found - N/A
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-10",
+                        finding_name='SageMaker Notebook VPC Deployment Check',
+                        finding_details="No notebook instances found",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/appendix-notebook-and-internet-access.html",
+                        severity='N/A',
+                        status='N/A'
+                    )
+                )
 
         return findings
 
@@ -1267,18 +1295,32 @@ def check_sagemaker_model_network_isolation() -> Dict[str, Any]:
                     )
                 )
         else:
-            detail_msg = f"All {len(models_with_isolation)} models have network isolation enabled" if models_with_isolation else "No models found"
-            findings['csv_data'].append(
-                create_finding(
-                    check_id="SM-11",
-                    finding_name='SageMaker Model Network Isolation Check',
-                    finding_details=detail_msg,
-                    resolution='',
-                    reference="https://docs.aws.amazon.com/sagemaker/latest/dg/mkt-algo-model-internet-free.html",
-                    severity='N/A',
-                    status='Passed'
+            if models_with_isolation:
+                # Models exist and all have network isolation - Passed
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-11",
+                        finding_name='SageMaker Model Network Isolation Check',
+                        finding_details=f"All {len(models_with_isolation)} models have network isolation enabled",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/mkt-algo-model-internet-free.html",
+                        severity='N/A',
+                        status='Passed'
+                    )
                 )
-            )
+            else:
+                # No models found - N/A
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-11",
+                        finding_name='SageMaker Model Network Isolation Check',
+                        finding_details="No models found",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/mkt-algo-model-internet-free.html",
+                        severity='N/A',
+                        status='N/A'
+                    )
+                )
 
         return findings
 
@@ -1358,18 +1400,32 @@ def check_sagemaker_endpoint_instance_count() -> Dict[str, Any]:
                     )
                 )
         else:
-            detail_msg = f"All {len(endpoints_multi_instance)} endpoint variants have multiple instances" if endpoints_multi_instance else "No InService endpoints found"
-            findings['csv_data'].append(
-                create_finding(
-                    check_id="SM-12",
-                    finding_name='SageMaker Endpoint Instance Count Check',
-                    finding_details=detail_msg,
-                    resolution='',
-                    reference="https://docs.aws.amazon.com/sagemaker/latest/dg/endpoint-scaling.html",
-                    severity='N/A',
-                    status='Passed'
+            if endpoints_multi_instance:
+                # Endpoints exist and all have multiple instances - Passed
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-12",
+                        finding_name='SageMaker Endpoint Instance Count Check',
+                        finding_details=f"All {len(endpoints_multi_instance)} endpoint variants have multiple instances",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/endpoint-scaling.html",
+                        severity='N/A',
+                        status='Passed'
+                    )
                 )
-            )
+            else:
+                # No InService endpoints found - N/A
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-12",
+                        finding_name='SageMaker Endpoint Instance Count Check',
+                        finding_details="No InService endpoints found",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/endpoint-scaling.html",
+                        severity='N/A',
+                        status='N/A'
+                    )
+                )
 
         return findings
 
@@ -1439,18 +1495,32 @@ def check_sagemaker_monitoring_network_isolation() -> Dict[str, Any]:
                     )
                 )
         else:
-            detail_msg = f"All {len(schedules_with_isolation)} monitoring schedules have network isolation enabled" if schedules_with_isolation else "No monitoring schedules found"
-            findings['csv_data'].append(
-                create_finding(
-                    check_id="SM-13",
-                    finding_name='SageMaker Monitoring Network Isolation Check',
-                    finding_details=detail_msg,
-                    resolution='',
-                    reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor-network-isolation.html",
-                    severity='N/A',
-                    status='Passed'
+            if schedules_with_isolation:
+                # Monitoring schedules exist and all have network isolation - Passed
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-13",
+                        finding_name='SageMaker Monitoring Network Isolation Check',
+                        finding_details=f"All {len(schedules_with_isolation)} monitoring schedules have network isolation enabled",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor-network-isolation.html",
+                        severity='N/A',
+                        status='Passed'
+                    )
                 )
-            )
+            else:
+                # No monitoring schedules found - N/A
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-13",
+                        finding_name='SageMaker Monitoring Network Isolation Check',
+                        finding_details="No monitoring schedules found",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor-network-isolation.html",
+                        severity='N/A',
+                        status='N/A'
+                    )
+                )
 
         return findings
 
@@ -1549,18 +1619,32 @@ def check_sagemaker_model_container_repository() -> Dict[str, Any]:
                     )
                 )
         else:
-            detail_msg = f"All {len(models_vpc_mode)} models use VPC repository access" if models_vpc_mode else "No models found or all use default Platform access"
-            findings['csv_data'].append(
-                create_finding(
-                    check_id="SM-14",
-                    finding_name='SageMaker Model Repository Access Check',
-                    finding_details=detail_msg,
-                    resolution='',
-                    reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-container-repositories.html",
-                    severity='N/A',
-                    status='Passed'
+            if models_vpc_mode:
+                # Models exist and all use VPC repository access - Passed
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-14",
+                        finding_name='SageMaker Model Repository Access Check',
+                        finding_details=f"All {len(models_vpc_mode)} models use VPC repository access",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-container-repositories.html",
+                        severity='N/A',
+                        status='Passed'
+                    )
                 )
-            )
+            else:
+                # No models found or all use default Platform access - N/A
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-14",
+                        finding_name='SageMaker Model Repository Access Check',
+                        finding_details="No models found or all use default Platform access",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-container-repositories.html",
+                        severity='N/A',
+                        status='N/A'
+                    )
+                )
 
         return findings
 
@@ -1641,22 +1725,23 @@ def check_sagemaker_feature_store_encryption() -> Dict[str, Any]:
                         check_id="SM-15",
                         finding_name='SageMaker Feature Store Encryption Check',
                         finding_details=f"All {len(feature_groups_with_encryption)} feature groups with offline stores have KMS encryption configured",
-                        resolution='',
+                        resolution='No action required',
                         reference="https://docs.aws.amazon.com/sagemaker/latest/dg/feature-store-security.html",
                         severity='N/A',
                         status='Passed'
                     )
                 )
             else:
+                # No feature groups with offline stores found - N/A
                 findings['csv_data'].append(
                     create_finding(
                         check_id="SM-15",
                         finding_name='SageMaker Feature Store Encryption Check',
                         finding_details="No feature groups with offline stores found",
-                        resolution='',
+                        resolution='No action required',
                         reference="https://docs.aws.amazon.com/sagemaker/latest/dg/feature-store-security.html",
                         severity='N/A',
-                        status='Passed'
+                        status='N/A'
                     )
                 )
 
@@ -1728,18 +1813,32 @@ def check_sagemaker_data_quality_encryption() -> Dict[str, Any]:
                     )
                 )
         else:
-            detail_msg = f"All {len(jobs_with_encryption)} data quality job definitions have inter-container encryption enabled" if jobs_with_encryption else "No data quality job definitions found"
-            findings['csv_data'].append(
-                create_finding(
-                    check_id="SM-16",
-                    finding_name='SageMaker Data Quality Job Encryption Check',
-                    finding_details=detail_msg,
-                    resolution='',
-                    reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor-data-quality.html",
-                    severity='N/A',
-                    status='Passed'
+            if jobs_with_encryption:
+                # Data quality jobs exist and all have encryption - Passed
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-16",
+                        finding_name='SageMaker Data Quality Job Encryption Check',
+                        finding_details=f"All {len(jobs_with_encryption)} data quality job definitions have inter-container encryption enabled",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor-data-quality.html",
+                        severity='N/A',
+                        status='Passed'
+                    )
                 )
-            )
+            else:
+                # No data quality job definitions found - N/A
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-16",
+                        finding_name='SageMaker Data Quality Job Encryption Check',
+                        finding_details="No data quality job definitions found",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor-data-quality.html",
+                        severity='N/A',
+                        status='N/A'
+                    )
+                )
 
         return findings
 
@@ -1824,18 +1923,32 @@ def check_sagemaker_processing_job_encryption() -> Dict[str, Any]:
                     )
                 )
         else:
-            detail_msg = f"All {len(jobs_with_encryption)} processing jobs have volume encryption configured" if jobs_with_encryption else "No processing jobs found"
-            findings['csv_data'].append(
-                create_finding(
-                    check_id="SM-17",
-                    finding_name='SageMaker Processing Job Encryption Check',
-                    finding_details=detail_msg,
-                    resolution='',
-                    reference="https://docs.aws.amazon.com/sagemaker/latest/dg/processing-job.html",
-                    severity='N/A',
-                    status='Passed'
+            if jobs_with_encryption:
+                # Processing jobs exist and all have encryption - Passed
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-17",
+                        finding_name='SageMaker Processing Job Encryption Check',
+                        finding_details=f"All {len(jobs_with_encryption)} processing jobs have volume encryption configured",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/processing-job.html",
+                        severity='N/A',
+                        status='Passed'
+                    )
                 )
-            )
+            else:
+                # No processing jobs found - N/A
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-17",
+                        finding_name='SageMaker Processing Job Encryption Check',
+                        finding_details="No processing jobs found",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/processing-job.html",
+                        severity='N/A',
+                        status='N/A'
+                    )
+                )
 
         return findings
 
@@ -1919,18 +2032,32 @@ def check_sagemaker_transform_job_encryption() -> Dict[str, Any]:
                     )
                 )
         else:
-            detail_msg = f"All {len(jobs_with_encryption)} transform jobs have volume encryption configured" if jobs_with_encryption else "No transform jobs found"
-            findings['csv_data'].append(
-                create_finding(
-                    check_id="SM-18",
-                    finding_name='SageMaker Transform Job Encryption Check',
-                    finding_details=detail_msg,
-                    resolution='',
-                    reference="https://docs.aws.amazon.com/sagemaker/latest/dg/batch-transform.html",
-                    severity='N/A',
-                    status='Passed'
+            if jobs_with_encryption:
+                # Transform jobs exist and all have encryption - Passed
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-18",
+                        finding_name='SageMaker Transform Job Encryption Check',
+                        finding_details=f"All {len(jobs_with_encryption)} transform jobs have volume encryption configured",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/batch-transform.html",
+                        severity='N/A',
+                        status='Passed'
+                    )
                 )
-            )
+            else:
+                # No transform jobs found - N/A
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-18",
+                        finding_name='SageMaker Transform Job Encryption Check',
+                        finding_details="No transform jobs found",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/batch-transform.html",
+                        severity='N/A',
+                        status='N/A'
+                    )
+                )
 
         return findings
 
@@ -2015,18 +2142,32 @@ def check_sagemaker_hyperparameter_tuning_encryption() -> Dict[str, Any]:
                     )
                 )
         else:
-            detail_msg = f"All {len(jobs_with_encryption)} hyperparameter tuning jobs have volume encryption configured" if jobs_with_encryption else "No hyperparameter tuning jobs found"
-            findings['csv_data'].append(
-                create_finding(
-                    check_id="SM-19",
-                    finding_name='SageMaker Hyperparameter Tuning Job Encryption Check',
-                    finding_details=detail_msg,
-                    resolution='',
-                    reference="https://docs.aws.amazon.com/sagemaker/latest/dg/automatic-model-tuning.html",
-                    severity='N/A',
-                    status='Passed'
+            if jobs_with_encryption:
+                # Hyperparameter tuning jobs exist and all have encryption - Passed
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-19",
+                        finding_name='SageMaker Hyperparameter Tuning Job Encryption Check',
+                        finding_details=f"All {len(jobs_with_encryption)} hyperparameter tuning jobs have volume encryption configured",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/automatic-model-tuning.html",
+                        severity='N/A',
+                        status='Passed'
+                    )
                 )
-            )
+            else:
+                # No hyperparameter tuning jobs found - N/A
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-19",
+                        finding_name='SageMaker Hyperparameter Tuning Job Encryption Check',
+                        finding_details="No hyperparameter tuning jobs found",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/automatic-model-tuning.html",
+                        severity='N/A',
+                        status='N/A'
+                    )
+                )
 
         return findings
 
@@ -2110,18 +2251,32 @@ def check_sagemaker_compilation_job_encryption() -> Dict[str, Any]:
                     )
                 )
         else:
-            detail_msg = f"All {len(jobs_with_encryption)} compilation jobs have output encryption configured" if jobs_with_encryption else "No compilation jobs found"
-            findings['csv_data'].append(
-                create_finding(
-                    check_id="SM-20",
-                    finding_name='SageMaker Compilation Job Encryption Check',
-                    finding_details=detail_msg,
-                    resolution='',
-                    reference="https://docs.aws.amazon.com/sagemaker/latest/dg/neo.html",
-                    severity='N/A',
-                    status='Passed'
+            if jobs_with_encryption:
+                # Compilation jobs exist and all have encryption - Passed
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-20",
+                        finding_name='SageMaker Compilation Job Encryption Check',
+                        finding_details=f"All {len(jobs_with_encryption)} compilation jobs have output encryption configured",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/neo.html",
+                        severity='N/A',
+                        status='Passed'
+                    )
                 )
-            )
+            else:
+                # No compilation jobs found - N/A
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-20",
+                        finding_name='SageMaker Compilation Job Encryption Check',
+                        finding_details="No compilation jobs found",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/neo.html",
+                        severity='N/A',
+                        status='N/A'
+                    )
+                )
 
         return findings
 
@@ -2205,18 +2360,32 @@ def check_sagemaker_automl_network_isolation() -> Dict[str, Any]:
                     )
                 )
         else:
-            detail_msg = f"All {len(jobs_with_isolation)} AutoML jobs have inter-container encryption enabled" if jobs_with_isolation else "No AutoML jobs found"
-            findings['csv_data'].append(
-                create_finding(
-                    check_id="SM-21",
-                    finding_name='SageMaker AutoML Job Network Isolation Check',
-                    finding_details=detail_msg,
-                    resolution='',
-                    reference="https://docs.aws.amazon.com/sagemaker/latest/dg/autopilot-security.html",
-                    severity='N/A',
-                    status='Passed'
+            if jobs_with_isolation:
+                # AutoML jobs exist and all have encryption - Passed
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-21",
+                        finding_name='SageMaker AutoML Job Network Isolation Check',
+                        finding_details=f"All {len(jobs_with_isolation)} AutoML jobs have inter-container encryption enabled",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/autopilot-security.html",
+                        severity='N/A',
+                        status='Passed'
+                    )
                 )
-            )
+            else:
+                # No AutoML jobs found - N/A
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="SM-21",
+                        finding_name='SageMaker AutoML Job Network Isolation Check',
+                        finding_details="No AutoML jobs found",
+                        resolution='No action required',
+                        reference="https://docs.aws.amazon.com/sagemaker/latest/dg/autopilot-security.html",
+                        severity='N/A',
+                        status='N/A'
+                    )
+                )
 
         return findings
 
@@ -2340,7 +2509,7 @@ def check_model_approval_workflow() -> Dict[str, Any]:
                     check_id="SM-22",
                     finding_name='Model Approval Workflow Check',
                     finding_details=f"Checked {groups_checked} model package groups. Approval workflows appear to be properly configured.",
-                    resolution='',
+                    resolution='No action required',
                     reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry-approve.html",
                     severity='N/A',
                     status='Passed'
@@ -2487,7 +2656,7 @@ def check_model_drift_detection() -> Dict[str, Any]:
                         check_id="SM-23",
                         finding_name='Model Drift Detection Check',
                         finding_details=f"All {len(endpoints_with_monitoring)} InService endpoints have drift detection monitoring configured.",
-                        resolution='',
+                        resolution='No action required',
                         reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor.html",
                         severity='N/A',
                         status='Passed'
@@ -2499,7 +2668,7 @@ def check_model_drift_detection() -> Dict[str, Any]:
                         check_id="SM-23",
                         finding_name='Model Drift Detection Check',
                         finding_details="No InService endpoints found to monitor.",
-                        resolution='',
+                        resolution='No action required',
                         reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor.html",
                         severity='N/A',
                         status='Passed'
@@ -2583,7 +2752,7 @@ def check_ab_testing_shadow_deployment() -> Dict[str, Any]:
                     check_id="SM-24",
                     finding_name='A/B Testing and Shadow Deployment Check',
                     finding_details="No InService endpoints found.",
-                    resolution='',
+                    resolution='No action required',
                     reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-ab-testing.html",
                     severity='N/A',
                     status='Passed'
@@ -2597,7 +2766,7 @@ def check_ab_testing_shadow_deployment() -> Dict[str, Any]:
                         check_id="SM-24",
                         finding_name='Shadow Deployment Pattern Detected',
                         finding_details=f"Found {len(shadow_endpoints)} endpoint(s) using shadow deployment pattern for safe model validation. This is a recommended practice for production deployments.",
-                        resolution='',
+                        resolution='No action required',
                         reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-shadow-deployment.html",
                         severity='N/A',
                         status='Passed'
@@ -2611,7 +2780,7 @@ def check_ab_testing_shadow_deployment() -> Dict[str, Any]:
                         check_id="SM-24",
                         finding_name='A/B Testing Pattern Detected',
                         finding_details=f"Found {len(multi_variant_endpoints)} endpoint(s) using A/B testing with multiple production variants. This enables gradual rollout and comparison of model versions.",
-                        resolution='',
+                        resolution='No action required',
                         reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-ab-testing.html",
                         severity='N/A',
                         status='Passed'
@@ -2649,7 +2818,7 @@ def check_ab_testing_shadow_deployment() -> Dict[str, Any]:
                         check_id="SM-24",
                         finding_name='Safe Deployment Patterns Check',
                         finding_details=f"Safe deployment patterns are being utilized. {len(shadow_endpoints)} shadow deployments, {len(multi_variant_endpoints)} A/B tests configured.",
-                        resolution='',
+                        resolution='No action required',
                         reference="https://docs.aws.amazon.com/sagemaker/latest/dg/model-ab-testing.html",
                         severity='N/A',
                         status='Passed'
@@ -2776,7 +2945,7 @@ def check_ml_lineage_tracking() -> Dict[str, Any]:
                     check_id="SM-25",
                     finding_name='ML Lineage Tracking - Experiments Active',
                     finding_details="SageMaker Experiments and Trials are being used for ML lineage tracking.",
-                    resolution='',
+                    resolution='No action required',
                     reference="https://docs.aws.amazon.com/sagemaker/latest/dg/experiments.html",
                     severity='N/A',
                     status='Passed'
@@ -2900,7 +3069,7 @@ def check_model_registry_usage(permission_cache) -> Dict[str, Any]:
                     check_id="SM-08",
                     finding_name='Model Registry Usage Check',
                     finding_details='Model Registry is being used effectively',
-                    resolution='',
+                    resolution='No action required',
                     reference='https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry.html',
                     severity='N/A',
                     status='Passed'

@@ -347,6 +347,7 @@ def generate_html_report(assessment_results):
         .status-badge {{ display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }}
         .status-badge.passed {{ background: #ecfdf5; color: var(--status-passed); }}
         .status-badge.failed {{ background: #fef2f2; color: var(--status-failed); }}
+        .status-badge.na {{ background: #f3f4f6; color: var(--severity-na); }}
         .status-badge::before {{ content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }}
         .reference-btn {{ display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: var(--accent-light); color: var(--accent); text-decoration: none; border-radius: 6px; font-size: 11px; font-weight: 600; border: 1px solid var(--border-color); transition: all 0.15s ease; margin: 2px 0; }}
         .reference-btn:hover {{ background: var(--accent); color: white; border-color: var(--accent); }}
@@ -475,7 +476,12 @@ def generate_html_report(assessment_results):
                         severity = finding.get('Severity', 'N/A').lower()
                         severity_class = severity if severity in ['high', 'medium', 'low'] else 'na'
                         status = finding.get('Status', '').lower()
-                        status_class = 'passed' if status == 'passed' else 'failed'
+                        if status == 'passed':
+                            status_class = 'passed'
+                        elif status == 'n/a':
+                            status_class = 'na'
+                        else:
+                            status_class = 'failed'
 
                         # Handle multiple references
                         refs = finding.get('Reference', '').split('\n')

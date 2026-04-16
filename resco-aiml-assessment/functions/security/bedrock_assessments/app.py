@@ -167,7 +167,7 @@ def check_marketplace_subscription_access(permission_cache) -> Dict[str, Any]:
                     resolution="No action required",
                     reference="https://docs.aws.amazon.com/bedrock/latest/userguide/security-iam-awsmanpol.html#security-iam-awsmanpol-bedrock-marketplace",
                     severity='N/A',
-                    status='Passed'
+                    status='N/A'
                 ))
 
         return findings
@@ -274,7 +274,7 @@ def check_stale_bedrock_access(permission_cache) -> Dict[str, Any]:
                     resolution="No action required",
                     reference="https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_last-accessed.html",
                     severity='N/A',
-                    status='Passed'
+                    status='N/A'
                 )
             )
             return findings
@@ -425,7 +425,7 @@ def check_bedrock_full_access_roles(permission_cache) -> Dict[str, Any]:
                 resolution="No action required",
                 reference="https://docs.aws.amazon.com/bedrock/latest/userguide/security_iam_id-based-policy-examples-agent.html#iam-agents-ex-all\nhttps://docs.aws.amazon.com/bedrock/latest/userguide/security_iam_id-based-policy-examples-br-studio.html",
                 severity='N/A',
-                status='Passed'
+                status='N/A'
             )
         )
 
@@ -1079,7 +1079,7 @@ def check_bedrock_knowledge_base_encryption() -> Dict[str, Any]:
                         resolution="No action required",
                         reference="https://docs.aws.amazon.com/bedrock/latest/userguide/encryption-kb.html",
                         severity='N/A',
-                        status='Passed'
+                        status='N/A'
                     )
                 )
                 return findings
@@ -1311,18 +1311,32 @@ def check_bedrock_guardrail_iam_enforcement(permission_cache) -> Dict[str, Any]:
                 )
             )
         else:
-            detail_msg = "No roles with Bedrock invoke permissions found" if not roles_with_enforcement else f"All {len(roles_with_enforcement)} roles with Bedrock invoke permissions have guardrail enforcement"
-            findings['csv_data'].append(
-                create_finding(
-                    check_id="BR-10",
-                    finding_name="Bedrock Guardrail IAM Enforcement Check",
-                    finding_details=detail_msg,
-                    resolution="No action required",
-                    reference="https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions-id.html",
-                    severity='N/A',
-                    status='Passed'
+            if not roles_with_enforcement:
+                # No roles with Bedrock invoke permissions - N/A (nothing to check)
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="BR-10",
+                        finding_name="Bedrock Guardrail IAM Enforcement Check",
+                        finding_details="No roles with Bedrock invoke permissions found",
+                        resolution="No action required",
+                        reference="https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions-id.html",
+                        severity='N/A',
+                        status='N/A'
+                    )
                 )
-            )
+            else:
+                # Roles exist and all have guardrail enforcement - Passed
+                findings['csv_data'].append(
+                    create_finding(
+                        check_id="BR-10",
+                        finding_name="Bedrock Guardrail IAM Enforcement Check",
+                        finding_details=f"All {len(roles_with_enforcement)} roles with Bedrock invoke permissions have guardrail enforcement",
+                        resolution="No action required",
+                        reference="https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions-id.html",
+                        severity='N/A',
+                        status='Passed'
+                    )
+                )
 
         return findings
 
@@ -1368,7 +1382,7 @@ def check_bedrock_custom_model_encryption() -> Dict[str, Any]:
                         resolution="No action required",
                         reference="https://docs.aws.amazon.com/bedrock/latest/userguide/custom-models-security.html",
                         severity='N/A',
-                        status='Passed'
+                        status='N/A'
                     )
                 )
                 return findings
@@ -1640,7 +1654,7 @@ def check_bedrock_flows_guardrails() -> Dict[str, Any]:
                         resolution="No action required",
                         reference="https://docs.aws.amazon.com/bedrock/latest/userguide/flows-guardrails.html",
                         severity='N/A',
-                        status='Passed'
+                        status='N/A'
                     )
                 )
                 return findings
@@ -1717,20 +1731,32 @@ def check_bedrock_flows_guardrails() -> Dict[str, Any]:
                         )
                     )
             else:
-                detail_msg = f"All {len(flows)} flows reviewed" if flows else "No flows found"
                 if flows_with_guardrails:
-                    detail_msg = f"All nodes in {len(flows_with_guardrails)} flows have guardrails configured"
-                findings['csv_data'].append(
-                    create_finding(
-                        check_id="BR-13",
-                        finding_name="Bedrock Flows Guardrails Check",
-                        finding_details=detail_msg,
-                        resolution="No action required",
-                        reference="https://docs.aws.amazon.com/bedrock/latest/userguide/flows-guardrails.html",
-                        severity='N/A',
-                        status='Passed'
+                    # Flows exist and all have guardrails - Passed
+                    findings['csv_data'].append(
+                        create_finding(
+                            check_id="BR-13",
+                            finding_name="Bedrock Flows Guardrails Check",
+                            finding_details=f"All nodes in {len(flows_with_guardrails)} flows have guardrails configured",
+                            resolution="No action required",
+                            reference="https://docs.aws.amazon.com/bedrock/latest/userguide/flows-guardrails.html",
+                            severity='N/A',
+                            status='Passed'
+                        )
                     )
-                )
+                else:
+                    # Flows exist but none have guardrail-applicable nodes - N/A
+                    findings['csv_data'].append(
+                        create_finding(
+                            check_id="BR-13",
+                            finding_name="Bedrock Flows Guardrails Check",
+                            finding_details=f"Reviewed {len(flows)} flows - no Prompt or Knowledge Base nodes requiring guardrails",
+                            resolution="No action required",
+                            reference="https://docs.aws.amazon.com/bedrock/latest/userguide/flows-guardrails.html",
+                            severity='N/A',
+                            status='N/A'
+                        )
+                    )
 
         except Exception as e:
             logger.warning(f"Error listing flows: {str(e)}")
@@ -1788,7 +1814,7 @@ def check_bedrock_agent_roles(permission_cache) -> Dict[str, Any]:
                         resolution="No action required",
                         reference="https://docs.aws.amazon.com/bedrock/latest/userguide/security_iam_service-with-iam.html",
                         severity='N/A',
-                        status='Passed'
+                        status='N/A'
                     )
                 )
                 return findings
