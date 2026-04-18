@@ -315,6 +315,12 @@ Resources:
                 Effect: Allow
                 Resource:
                   - !Sub "arn:${AWS::Partition}:cloudformation:*:aws:transform/Serverless-2016-10-31"
+              - Action:
+                  - cloudformation:GetTemplateSummary
+                  - cloudformation:ListStacks
+                  - cloudformation:DescribeStacks
+                Effect: Allow
+                Resource: "*"
         - PolicyName: SAMPermissions
           PolicyDocument:
             Version: "2012-10-17"
